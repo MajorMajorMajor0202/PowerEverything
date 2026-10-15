@@ -56,7 +56,7 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
         // 否则会与上游包的同名命令撞车，导致命令面板里两个插件无法区分、
         // 快捷键互相抢占，甚至新命令不显示。
         Id = CommandIds.ForScope(_scopePath);
-        Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png");
+        Icon = IconHelpers.FromRelativePath("Assets\\Images\\search.png");
         Title = Resources.everything_subtitle_header;
         Name = CommandIds.DisplayName;
 
@@ -314,7 +314,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             {
                 Title = folder.DisplayName,
                 Subtitle = folder.Path,
+                // 这些「已打开文件夹」项用 folder-search 图标；右键菜单补一个「在终端中打开路径」。
                 Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
+                MoreCommands = [new CommandContextItem(new OpenInConsoleForPathCommand(folder.Path))],
             });
         }
 

@@ -24,17 +24,11 @@ internal static class CommandIds
     /// <summary>全局搜索的 fallback 项。</summary>
     public const string Fallback = Prefix + ".fallback";
 
-    /// <summary>「在打开的文件夹中搜索」的文件夹选择页。</summary>
-    public const string FolderPicker = Prefix + ".folderPicker";
-
     /// <summary>扩展在命令面板中的显示名（与上游的「Everything 搜索」区分开）。</summary>
     public const string DisplayName = "Everything 文件夹搜索";
 
     /// <summary>fork 自己的全局搜索入口标题。</summary>
     public const string GlobalSearchTitle = "Everything 全局搜索";
-
-    /// <summary>新功能入口标题。</summary>
-    public const string FolderPickerTitle = "在打开的文件夹中搜索";
 
     /// <summary>
     /// 为某个搜索范围生成稳定的页面 ID：同一路径始终得到同一个 ID，

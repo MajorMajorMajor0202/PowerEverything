@@ -597,7 +597,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         return items;
     }
 
-    private IListItem CreateSearchFolderItem(EverythingExtension.Internal.SearchResult result)
+    private ListItem CreateSearchFolderItem(EverythingExtension.Internal.SearchResult result)
     {
         var candidate = new FolderCandidate(
             result.FullPath,
@@ -611,7 +611,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         return item;
     }
 
-    private IListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
+    private ListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
     {
         var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
 
