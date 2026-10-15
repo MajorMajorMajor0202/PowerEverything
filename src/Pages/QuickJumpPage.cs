@@ -57,9 +57,6 @@ internal sealed partial class QuickJumpPage : DynamicListPage
     /// <summary>「跳转到的文件夹」用的图标。</summary>
     private const string FolderIconPath = "Assets\\Images\\folder-48.png";
 
-    /// <summary>「已固定 / 已打开的文件夹」用的图标（表示「跳过去」的那个特殊图标）。</summary>
-    private const string JumpIconPath = "Assets\\Images\\jump-96.png";
-
     /// <summary>「文件窗口」用的图标。</summary>
     private const string WindowIconPath = "Assets\\Images\\window-48.png";
 
@@ -804,7 +801,9 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             // 固定的文件夹不在副标题上做任何标记：它要和「桌面 / 下载」长得一模一样，
             // 只是排在默认位置之前而已。想取消就去 Ctrl+K 里看「从首页移除」。
             Subtitle = candidate.Path,
-            Icon = IconHelpers.FromRelativePath(candidate.IsOpen || candidate.IsPinned ? JumpIconPath : FolderIconPath),
+            // 文件夹行一律用 QuickJump 原来的那个文件夹图标（folder-48），
+            // 不再用入口那个 jump 箭头 —— 箭头只留在命令面板的入口上。
+            Icon = IconHelpers.FromRelativePath(FolderIconPath),
             MoreCommands = FolderContextCommands(candidate),
         };
     }
