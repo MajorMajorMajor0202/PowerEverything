@@ -1,0 +1,12 @@
+# Build output
+bin/
+obj/
+.vs/
+*.user
+*.suo
+
+# Release 出包目录
+Release/
+
+# 签名私钥（绝不入库）；.cer 公钥随仓库走（install.ps1 需要）
+*.pfx

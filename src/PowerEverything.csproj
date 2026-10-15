@@ -1,0 +1,152 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>PowerEverything</RootNamespace>
+    <AssemblyName>PowerEverything</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <NeutralLanguage>en</NeutralLanguage>
+    <WindowsSdkPackageVersion>10.0.26100.68-preview</WindowsSdkPackageVersion>
+    <TargetFramework>net10.0-windows10.0.26100.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.19041.0</TargetPlatformMinVersion>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <PublishProfile>win-$(Platform).pubxml</PublishProfile>
+    <EnableMsixTooling>true</EnableMsixTooling>
+    <Nullable>enable</Nullable>
+    <Platforms>x64;ARM64</Platforms>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="PowerEverything.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="$(ApplicationManifest)" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(DisableMsixProjectCapabilityAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <ProjectCapability Include="Msix" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CommandPalette.Extensions" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Windows.CsWinRT" />
+    <PackageReference Include="Microsoft.WindowsAppSDK" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
+    <PackageReference Include="System.Drawing.Common" />
+    <PackageReference Include="Shmuelie.WinRTServer" />
+    <PackageReference Include="ToolGood.Words.Pinyin" />
+    <PackageReference Include="UTF.Unknown" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools.MSIX">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Update="Assets\Images\*.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Everything.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Assets\Everything.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Everything64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Everything3_x64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="EverythingARM64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Everything3_ARM64.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="Templates\CodeBlockViewTemplate.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Templates\ImageViewTemplate.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(DisableHasPackageAndPublishMenuAddedByProject)'!='true' and '$(EnableMsixTooling)'=='true'">
+    <HasPackageAndPublishMenu>true</HasPackageAndPublishMenu>
+  </PropertyGroup>
+  <PropertyGroup>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
+    <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
+    <GenerateTestArtifacts>True</GenerateTestArtifacts>
+    <AppxBundle>Never</AppxBundle>
+    <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <PackageCertificateThumbprint>0000000000000000000000000000000000000000</PackageCertificateThumbprint>
+    <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
+    <AppxPackageDir>$(MSBuildThisFileDirectory)..\Release\AppPackages\</AppxPackageDir>
+    <AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
+    <AppInstallerUri>C:\Program Files</AppInstallerUri>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <ApplicationIcon>PowerEverything.ico</ApplicationIcon>
+    <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
+    <DefaultLanguage>en</DefaultLanguage>
+    <PackageCertificateKeyFile>PowerEverything_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <PackageCertificatePassword>PowerEverythingDev</PackageCertificatePassword>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <DefineConstants>$(DefineConstants);X64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
+    <DefineConstants>$(DefineConstants);ARM64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <DefineConstants>$(DefineConstants);X64</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
+    <DefineConstants>$(DefineConstants);ARM64</DefineConstants>
+  </PropertyGroup>
+  <!--
+    把 Everything 的原生 SDK DLL 显式注入发布产物（参照 EverythingExtension 的做法）。
+    用 ResolvedFileToPublish 挂在 ComputeFilesToPublish 之后，不受 $(RuntimeIdentifier)
+    是否为空影响，保证 Publish 目录与 MSIX 都能拿到这两个 DLL。
+  -->
+  <PropertyGroup>
+    <EverythingNativeArch Condition="'$(RuntimeIdentifier)' == 'win-arm64'">arm64</EverythingNativeArch>
+    <EverythingNativeArch Condition="'$(EverythingNativeArch)' == '' and ('$(Platform)' == 'ARM64' or '$(Platform)' == 'arm64')">arm64</EverythingNativeArch>
+    <EverythingNativeArch Condition="'$(EverythingNativeArch)' == ''">x64</EverythingNativeArch>
+  </PropertyGroup>
+  <Target Name="AddEverythingNativeDllsToPublish"
+          AfterTargets="ComputeFilesToPublish"
+          Condition="'$(EverythingNativeArch)' == 'x64'">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)Everything64.dll">
+        <RelativePath>Everything64.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)Everything3_x64.dll">
+        <RelativePath>Everything3_x64.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+  <Target Name="AddEverythingNativeDllsToPublishArm64"
+          AfterTargets="ComputeFilesToPublish"
+          Condition="'$(EverythingNativeArch)' == 'arm64'">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)EverythingARM64.dll">
+        <RelativePath>EverythingARM64.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+      <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)Everything3_ARM64.dll">
+        <RelativePath>Everything3_ARM64.dll</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
+</Project>

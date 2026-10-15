@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3"
+  xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest"
+  xmlns:uap18="http://schemas.microsoft.com/appx/manifest/uap/windows10/18"
+  IgnorableNamespaces="uap uap3 rescap mp uap18">
+
+  <Identity
+    Name="PowerEverything"
+    Publisher="CN=PowerEverything.Dev"
+    Version="0.1.0.0" />
+
+  <Properties>
+    <DisplayName>PowerEverything</DisplayName>
+    <PublisherDisplayName>PowerEverything</PublisherDisplayName>
+    <Logo>Assets\Icons\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Universal" MinVersion="10.0.19041.0" MaxVersionTested="10.0.19041.0" />
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.19041.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="en" />
+    <Resource Language="zh-CN" />
+  </Resources>
+
+  <Applications>
+    <Application Id="App"
+      Executable="$targetnametoken$.exe"
+      EntryPoint="$targetentrypoint$" uap18:TrustLevel="appContainer" uap18:RuntimeBehavior="windowsApp">
+      <uap:VisualElements
+        DisplayName="PowerEverything"
+        Description="QuickJump 跳转 + Everything 搜索，单包合并的命令面板扩展"
+        BackgroundColor="transparent" Square44x44Logo="Assets\Icons\Square44x44Logo.png" Square150x150Logo="Assets\Icons\Square150x150Logo.png">
+        <uap:DefaultTile Wide310x150Logo="Assets\Icons\WideTile.png" />
+      </uap:VisualElements>
+      <Extensions>
+        <com:Extension Category="windows.comServer">
+          <com:ComServer>
+            <com:ExeServer Executable="PowerEverything.exe" Arguments="-RegisterProcessAsComServer" DisplayName="PowerEverything">
+              <com:Class Id="a1b2c3d4-1234-5678-9abc-def012345678" DisplayName="PowerEverything" />
+            </com:ExeServer>
+          </com:ComServer>
+        </com:Extension>
+        <uap3:Extension Category="windows.appExtension">
+          <uap3:AppExtension Name="com.microsoft.commandpalette"
+            Id="ID"
+            PublicFolder="Public"
+            DisplayName="PowerEverything"
+            Description="QuickJump 跳转 + Everything 搜索，单包合并的命令面板扩展">
+            <uap3:Properties>
+              <CmdPalProvider>
+                <Activation>
+                  <CreateInstance ClassId="a1b2c3d4-1234-5678-9abc-def012345678" />
+                </Activation>
+                <SupportedInterfaces>
+                  <Commands />
+                </SupportedInterfaces>
+              </CmdPalProvider>
+            </uap3:Properties>
+          </uap3:AppExtension>
+        </uap3:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <mp:PhoneIdentity PhoneProductId="a1b2c3d4-1234-5678-9abc-def012345678" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
+</Package>

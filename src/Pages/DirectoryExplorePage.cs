@@ -1,0 +1,209 @@
+﻿using Microsoft.CommandPalette.Extensions.Toolkit;
+using Microsoft.CommandPalette.Extensions;
+
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Xml.Linq;
+
+using Windows.Storage.Streams;
+using EverythingExtension.Properties;
+using EverythingExtension.Settings;
+using EverythingExtension.Internal;
+
+namespace EverythingExtension.Pages
+{
+    internal sealed partial class DirectoryExplorePage : DynamicListPage
+    {
+        #region Fields
+
+        private IEverythingClient _client;
+
+        #endregion Fields
+
+        #region Public Constructors
+
+        public DirectoryExplorePage(string path, IEverythingClient client)
+        {
+            _path = path;
+            Title = path;
+            Name = Resources.everything_folder_browse;
+            Icon = new IconInfo("\uec50");
+            ShowDetails = true;
+            _client = client;
+        }
+
+        #endregion Public Constructors
+
+
+
+        #region Fields
+
+        private string _path;
+        private List<EverythingListItem>? _directoryContents;
+        private List<EverythingListItem>? _filteredContents;
+
+        #endregion Fields
+
+        #region Public Methods
+
+        public override void UpdateSearchText(string oldSearch, string newSearch)
+        {
+            if (_directoryContents == null)
+            {
+                return;
+            }
+
+            if (string.IsNullOrEmpty(newSearch))
+            {
+                if (_filteredContents == null) return;
+                _filteredContents = null;
+                RaiseItemsChanged(-1);
+
+                return;
+            }
+
+            // Need to break this out the manual way so that the compiler can know this is an ExploreListItem
+            var filteredResults = ListHelpers.FilterList(
+                _directoryContents,
+                newSearch,
+                ListHelpers.ScoreListItem);
+
+            if (_filteredContents != null)
+            {
+                lock (_filteredContents)
+                {
+                    ListHelpers.InPlaceUpdateList<EverythingListItem>(_filteredContents, filteredResults);
+                }
+            }
+            else
+            {
+                _filteredContents = filteredResults.ToList();
+            }
+
+            RaiseItemsChanged(-1);
+        }
+
+        public override IListItem[] GetItems()
+        {
+            if (_filteredContents != null)
+            {
+                return _filteredContents.Count > 0
+                    ? _filteredContents.ToArray()
+                    : CreateFolderIsEmptyCommandItem("搜索结果为空");
+            }
+
+            if (_directoryContents != null)
+            {
+                return _directoryContents.Count > 0 ? _directoryContents.ToArray() : CreateFolderIsEmptyCommandItem(Resources.everything_folder_is_empty);
+            }
+
+            IsLoading = true;
+            if (!Path.Exists(_path))
+            {
+                EmptyContent = new CommandItem(title: Resources.everything_file_does_not_exit)
+                {
+                    Icon = new IconInfo("\ue783"),
+                    Command = new AnonymousCommand(() => { })
+                    {
+                        Name = Resources.everything_go_back,
+                        Result = CommandResult.GoBack()
+                    }
+                };
+                IsLoading = false;
+                return [];
+            }
+
+            var attr = File.GetAttributes(_path);
+
+            // detect whether its a directory or file
+            if ((attr & FileAttributes.Directory) != FileAttributes.Directory)
+            {
+                EmptyContent = new CommandItem(title: Resources.everything_file_is_file_not_folder)
+                {
+                    Icon = new IconInfo("\ue838"),
+                    Command = new AnonymousCommand(() => { })
+                    {
+                        Name = Resources.everything_go_back,
+                        Result = CommandResult.GoBack()
+                    }
+                };
+                IsLoading = false;
+                return [];
+            }
+
+            var contents = Directory.EnumerateFileSystemEntries(_path).ToList();
+
+            if (contents.Count == 0)
+            {
+                IsLoading = false;
+
+                return CreateFolderIsEmptyCommandItem(Resources.everything_folder_is_empty);
+            }
+            //var index = 0;
+            _directoryContents = [.. contents
+                .Select(s => new SearchResult(s))
+                .Select(i => new EverythingListItem(i,_client,true))];
+
+            //_ = Task.Run(() =>
+            //{
+            //    foreach (var item in _directoryContents)
+            //    {
+            //        IconInfo? icon = null;
+            //        try
+            //        {
+            //            var stream = ThumbnailHelper.GetThumbnail(item.Item.FullPath).Result;
+            //            if (stream != null)
+            //            {
+            //                var data = new IconData(RandomAccessStreamReference.CreateFromStream(stream));
+            //                icon = new IconInfo(data, data);
+            //            }
+            //        }
+            //        catch
+            //        {
+            //        }
+
+            //        item.Icon = icon;
+            //    }
+            //});
+
+            IsLoading = false;
+
+            return _directoryContents.ToArray();
+        }
+
+        #endregion Public Methods
+
+        #region Private Methods
+
+        /*private void HandlePathChangeRequested(EverythingListItem sender, string path)
+        {
+            _directoryContents = null;
+            _filteredContents = null;
+            _path = path;
+            Title = path;
+            SearchText = string.Empty;
+            RaiseItemsChanged();
+        }*/
+
+        private IListItem[] CreateFolderIsEmptyCommandItem(string title)
+        {
+            SearchResult result = new SearchResult(_path);
+            EverythingListItem listItem = new EverythingListItem(result, _client);
+            EmptyContent = new CommandItem(title: title)
+            {
+                Icon = new IconInfo("\uE838"),
+                Command = listItem.Command,
+                MoreCommands = ContextMenuLoader.LoadContextMenus(_client, result)
+            };
+
+            return [];
+        }
+
+        #endregion Private Methods
+    }
+}
