@@ -44,6 +44,21 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
     </PackageReference>
   </ItemGroup>
+  <!--
+    Everything 的 Resources 类命名空间是 EverythingExtension.Properties，但本项目 RootNamespace=PowerEverything，
+    默认会把 resx 编成 PowerEverything.Properties.Resources.resources，导致运行期
+    Resources.everything_* 全部抛 MissingManifestResourceException（被聚合 Provider 吞掉，
+    Everything 两个入口直接消失）。显式把逻辑名改回 EverythingExtension.Properties.* 以对齐。
+    QuickJump 没有 resx，无需处理。
+  -->
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <LogicalName>EverythingExtension.Properties.Resources.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Properties\Resources.zh-CN.resx">
+      <LogicalName>EverythingExtension.Properties.Resources.zh-CN.resources</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <Content Update="Assets\Images\*.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -87,7 +102,7 @@
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
     <AppxBundle>Never</AppxBundle>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
-    <PackageCertificateThumbprint>0000000000000000000000000000000000000000</PackageCertificateThumbprint>
+    <PackageCertificateThumbprint>E2B3F011379BEBDBD6DE76E1AD1B38E70A2F8613</PackageCertificateThumbprint>
     <AppxSymbolPackageEnabled>True</AppxSymbolPackageEnabled>
     <AppxPackageDir>$(MSBuildThisFileDirectory)..\Release\AppPackages\</AppxPackageDir>
     <AppxBundlePlatforms>x64|arm64</AppxBundlePlatforms>
@@ -121,9 +136,7 @@
     <EverythingNativeArch Condition="'$(EverythingNativeArch)' == '' and ('$(Platform)' == 'ARM64' or '$(Platform)' == 'arm64')">arm64</EverythingNativeArch>
     <EverythingNativeArch Condition="'$(EverythingNativeArch)' == ''">x64</EverythingNativeArch>
   </PropertyGroup>
-  <Target Name="AddEverythingNativeDllsToPublish"
-          AfterTargets="ComputeFilesToPublish"
-          Condition="'$(EverythingNativeArch)' == 'x64'">
+  <Target Name="AddEverythingNativeDllsToPublish" AfterTargets="ComputeFilesToPublish" Condition="'$(EverythingNativeArch)' == 'x64'">
     <ItemGroup>
       <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)Everything64.dll">
         <RelativePath>Everything64.dll</RelativePath>
@@ -135,9 +148,7 @@
       </ResolvedFileToPublish>
     </ItemGroup>
   </Target>
-  <Target Name="AddEverythingNativeDllsToPublishArm64"
-          AfterTargets="ComputeFilesToPublish"
-          Condition="'$(EverythingNativeArch)' == 'arm64'">
+  <Target Name="AddEverythingNativeDllsToPublishArm64" AfterTargets="ComputeFilesToPublish" Condition="'$(EverythingNativeArch)' == 'arm64'">
     <ItemGroup>
       <ResolvedFileToPublish Include="$(MSBuildThisFileDirectory)EverythingARM64.dll">
         <RelativePath>EverythingARM64.dll</RelativePath>
