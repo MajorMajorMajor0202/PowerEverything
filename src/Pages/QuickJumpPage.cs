@@ -5,6 +5,10 @@ using QuickJumpCmdPal.Commands;
 using QuickJumpCmdPal.Internal;
 using QuickJumpCmdPal.Settings;
 
+using EverythingExtension;
+using EverythingExtension.SDK;
+using EverythingExtension.Settings;
+
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -29,10 +33,11 @@ namespace QuickJumpCmdPal.Pages;
 ///      一旦选过，本次会话里就记住它，之后的文件夹直接跳，不再多问。
 ///
 /// 列表内容，三层，顺序就是列表顺序：
-///   1. 此刻真的开着窗口的资源管理器文件夹；
-///   2. 用户固定到首页的文件夹（已经开着的以第 1 层的身份出现，不重复）；
-///   3. 默认位置（桌面 / 下载 / 文档 / …/ 各驱动器）—— 一直在这儿，无法取消。
-/// 固定的行不做任何视觉标记，看起来和默认位置一样，只是排得更靠前。
+    ///   1. 此刻真的开着窗口的资源管理器文件夹；
+    ///   2. 用户固定到首页的文件夹（已经开着的以第 1 层的身份出现，不重复）。
+    /// 输入关键字还会用 Everything 搜「任意文件夹 / 文件」并补到列表后面，
+    /// 其中正开着窗口的路径会被提到搜索结果最前。
+    /// 固定的行不做任何视觉标记，只是排得更靠前。
 ///
 /// 键盘操作：
 ///   - 输入关键字 → 按名称/路径模糊筛选（文件夹名命中的整层排在只有路径命中的前面）；
@@ -53,6 +58,9 @@ internal sealed partial class QuickJumpPage : DynamicListPage
 
     /// <summary>「文件窗口」用的图标。</summary>
     private const string WindowIconPath = "Assets\\Images\\window-48.png";
+
+    /// <summary>「文件」用的图标（Everything 搜索结果里的文件项）。</summary>
+    private const string FileIconPath = "Assets\\Images\\file.png";
 
     /// <summary>Segoe Fluent 字体里的「刷新」字形。</summary>
     private const string RefreshGlyph = "\uE72C";
@@ -132,11 +140,33 @@ internal sealed partial class QuickJumpPage : DynamicListPage
     /// </summary>
     private string _pendingPath = string.Empty;
 
-    private bool _forceRefresh;
+        private bool _forceRefresh;
 
-    private List<FolderCandidate> _cachedCandidates = [];
+        private List<FolderCandidate> _cachedCandidates = [];
 
-    private DateTime _cachedCandidatesStamp = DateTime.MinValue;
+        private DateTime _cachedCandidatesStamp = DateTime.MinValue;
+
+        /// <summary>懒初始化的 Everything 客户端（仅用于「搜索任意文件夹 / 文件」）。</summary>
+        private IEverythingClient? _everythingClient;
+
+        /// <summary>是否已经尝试过初始化 Everything 客户端（只试一次，失败就禁用搜索）。</summary>
+        private bool _everythingTriedInit;
+
+        /// <summary>Everything 搜索结果与查询的缓存。</summary>
+        private readonly object _searchGate = new();
+
+        private string _searchCacheQuery = string.Empty;
+        private List<IListItem> _searchCache = [];
+        private DateTime _searchCacheStamp = DateTime.MinValue;
+
+        /// <summary>Everything 查询最短长度，避免单字符把整个索引拉出来。</summary>
+        private const int MinSearchLength = 2;
+
+        /// <summary>Everything 搜索每次最多返回的条目数（文件夹 + 文件合计）。</summary>
+        private const int MaxSearchResults = 40;
+
+        /// <summary>Everything 搜索结果缓存时长。</summary>
+        private static readonly TimeSpan SearchCacheLifetime = TimeSpan.FromMilliseconds(500);
 
     #endregion Fields
 
@@ -158,7 +188,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
 
         EmptyContent = new CommandItem()
         {
-            Title = "没有匹配的文件夹",
+            Title = "没有匹配的文件夹 / 文件",
             Icon = IconHelpers.FromRelativePath(EntryIconPath),
         };
     }
@@ -335,12 +365,14 @@ internal sealed partial class QuickJumpPage : DynamicListPage
 
         var query = _query.Trim();
         var items = new List<IListItem>();
+        var addedPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         // 直接把一个存在的目录路径粘进输入框 → 第一项就是它。
         var direct = ResolveDirectPath(query);
         if (direct is not null)
         {
             items.Add(CreateFolderItem(direct));
+            addedPaths.Add(QuickLocations.DedupeKey(direct.Path));
         }
 
         var candidates = GetCandidates();
@@ -356,6 +388,28 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             }
 
             items.Add(CreateFolderItem(candidate));
+            addedPaths.Add(QuickLocations.DedupeKey(candidate.Path));
+        }
+
+        // 直接在输入框搜索：把 Everything 索引里的文件夹 / 文件也拉进来。
+        if (query.Length >= MinSearchLength)
+        {
+            foreach (var item in GetSearchItems(query))
+            {
+                var path = item.Command switch
+                {
+                    JumpToFolderCommand folder => folder.Path,
+                    JumpToFileCommand file => file.Path,
+                    _ => string.Empty,
+                };
+
+                if (path.Length > 0 && !addedPaths.Add(QuickLocations.DedupeKey(path)))
+                {
+                    continue;
+                }
+
+                items.Add(item);
+            }
         }
 
         items.Add(CreateRefreshItem());
@@ -427,13 +481,148 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         PlaceholderText = text;
     }
 
+    #region Everything 搜索
+
     /// <summary>
-    /// 候选文件夹，分三层，顺序就是列表顺序：
+    /// 懒初始化 Everything 客户端（只试一次）。失败就禁用「搜索任意文件夹 / 文件」，
+    /// 退回只显示已打开 / 已固定的文件夹，不影响基本跳转。
+    /// </summary>
+    private bool EnsureEverythingClient()
+    {
+        if (_everythingTriedInit)
+        {
+            return _everythingClient is not null;
+        }
+
+        _everythingTriedInit = true;
+        try
+        {
+            _everythingClient = EverythingClientProvider.GetClient(EverythingSettings.Instance);
+            if (_everythingClient.Initialize())
+            {
+                Log.Info("Everything 客户端已初始化，搜索功能可用。");
+            }
+            else
+            {
+                Log.Warn("Everything 未运行，搜索功能已禁用（基本跳转不受影响）。");
+                _everythingClient = null;
+            }
+        }
+            catch (Exception ex)
+            {
+                Log.Warn($"初始化 Everything 客户端失败，搜索功能已禁用：{ex.Message}");
+                _everythingClient = null;
+            }
+
+        return _everythingClient is not null;
+    }
+
+    /// <summary>
+    /// 用 Everything 按关键字搜文件夹和文件，返回要插进列表的项。
+    /// 结果里凡是「正打开着窗口的路径」（资源管理器已打开的文件夹、或文件所在的文件夹），
+    /// 都会被提到本段结果的最前面 —— 你多半就是想跳到当前正在看的那儿。
+    /// 结果按 query 缓存一小段时间，避免每次按键都重新查询。
+    /// </summary>
+    private List<IListItem> GetSearchItems(string query)
+    {
+        lock (_searchGate)
+        {
+            if (DateTime.UtcNow - _searchCacheStamp < SearchCacheLifetime &&
+                string.Equals(query, _searchCacheQuery, StringComparison.Ordinal))
+            {
+                return _searchCache;
+            }
+        }
+
+        var items = new List<IListItem>();
+
+        if (EnsureEverythingClient() && _everythingClient is not null)
+        {
+            try
+            {
+                _everythingClient.Cancel();
+                _everythingClient.SearchResults.Clear();
+                _everythingClient.Execute(query, DateTime.UtcNow.ToFileTimeUtc());
+
+                var folders = new List<EverythingExtension.Internal.SearchResult>();
+                var files = new List<EverythingExtension.Internal.SearchResult>();
+                while (folders.Count + files.Count < MaxSearchResults &&
+                       _everythingClient.SearchResults.TryDequeue(out var result))
+                {
+                    if (result.Type == ResultType.Folder)
+                    {
+                        folders.Add(result);
+                    }
+                    else if (result.Type == ResultType.File)
+                    {
+                        files.Add(result);
+                    }
+                }
+
+                // 当前正打开着窗口的文件夹路径，用于把命中项提到最前。
+                var openPaths = OpenFolderEnumerator.GetOpenFolders()
+                    .Select(f => QuickLocations.DedupeKey(f.Path))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                bool IsOpen(EverythingExtension.Internal.SearchResult r) =>
+                    r.Type == ResultType.Folder
+                        ? openPaths.Contains(QuickLocations.DedupeKey(r.FullPath))
+                        : r.ParentPath is not null && openPaths.Contains(QuickLocations.DedupeKey(r.ParentPath));
+
+                var boostedFolders = folders.Where(IsOpen).ToList();
+                var boostedFiles = files.Where(IsOpen).ToList();
+
+                foreach (var r in boostedFolders) items.Add(CreateSearchFolderItem(r));
+                foreach (var r in boostedFiles) items.Add(CreateSearchFileItem(r));
+                foreach (var r in folders.Except(boostedFolders)) items.Add(CreateSearchFolderItem(r));
+                foreach (var r in files.Except(boostedFiles)) items.Add(CreateSearchFileItem(r));
+            }
+            catch (Exception ex)
+            {
+                Log.Warn($"Everything 搜索失败，仅显示已打开 / 已固定的文件夹：{ex.Message}");
+            }
+        }
+
+        lock (_searchGate)
+        {
+            _searchCacheQuery = query;
+            _searchCache = items;
+            _searchCacheStamp = DateTime.UtcNow;
+        }
+
+        return items;
+    }
+
+    private IListItem CreateSearchFolderItem(EverythingExtension.Internal.SearchResult result)
+    {
+        var candidate = new FolderCandidate(
+            result.FullPath,
+            string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
+            false,
+            _settings.IsPinned(result.FullPath));
+
+        return CreateFolderItem(candidate);
+    }
+
+    private IListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
+    {
+        var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
+
+        return new ListItem(new JumpToFileCommand(this, result.FullPath))
+        {
+            Title = string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
+            Subtitle = parent,
+            Icon = IconHelpers.FromRelativePath(FileIconPath),
+        };
+    }
+
+    #endregion Everything 搜索
+
+    /// <summary>
+    /// 候选文件夹，分两层，顺序就是列表顺序：
     ///   1. <b>此刻真的开着资源管理器窗口的文件夹</b> —— 最贴近用户当前的注意力；
-    ///   2. <b>用户固定到首页的文件夹</b>（没开窗口的那些）—— 常去的地方，提上来但排在 1 之后；
-    ///   3. <b>内置的默认位置</b>（桌面 / 下载 / 文档 / …/ 各驱动器）—— 永远垫底。
-    /// 同一层里保持各自原有的顺序；路径重复的只留第一次出现的那一层
-    /// （所以一个已经开着的固定文件夹会以「已打开」的身份出现在第一层，不会重复出现）。
+    ///   2. <b>用户固定到首页的文件夹</b>（没开窗口的那些）—— 常去的地方，提上来但排在 1 之后。
+    /// 同一层里保持各自原有的顺序；路径重复的只留第一次出现的那一层。
     ///
     /// 枚举 Explorer 窗口要起 STA 线程走 Shell COM，所以带一个很短的缓存：
     /// 同一个字输入过程中宿主要连着取好几次列表，不做缓存会明显卡顿。
@@ -472,14 +661,8 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             }
         }
 
-        // 3) 兜底的常用位置。
-        foreach (var location in QuickLocations.Get())
-        {
-            if (seen.Add(DedupeKey(location.Path)))
-            {
-                list.Add(location);
-            }
-        }
+        // 注：原先内置的「桌面 / 下载 / 文档 / 各驱动器」默认位置已移除 ——
+        // 让用户自己用 Ctrl+K 固定，常去的地方更贴合个人习惯。
 
         lock (_candidateGate)
         {

@@ -25,6 +25,32 @@ internal sealed partial class JumpToFolderCommand : InvokableCommand
         Icon = new IconInfo("\uE72A"); // 向右的箭头
     }
 
+    /// <summary>跳转目标的绝对路径（供列表去重用）。</summary>
+    internal string Path => _path;
+
+    public override CommandResult Invoke() => _page.ChooseFolder(_path);
+}
+
+/// <summary>
+/// 点某个文件 → 把它的完整路径送进文件窗口：
+/// 标准文件对话框会在「文件名」框里填入完整路径并回车，从而跳到所在文件夹并选中该文件。
+/// </summary>
+internal sealed partial class JumpToFileCommand : InvokableCommand
+{
+    private readonly QuickJumpPage _page;
+    private readonly string _path;
+
+    internal JumpToFileCommand(QuickJumpPage page, string path)
+    {
+        _page = page;
+        _path = path;
+        Name = "选中这个文件";
+        Icon = new IconInfo("\uE72A"); // 向右的箭头
+    }
+
+    /// <summary>文件完整路径（供列表去重用）。</summary>
+    internal string Path => _path;
+
     public override CommandResult Invoke() => _page.ChooseFolder(_path);
 }
 
