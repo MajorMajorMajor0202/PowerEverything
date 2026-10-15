@@ -84,10 +84,10 @@ public sealed partial class PowerEverythingProvider : CommandProvider
         }
     }
 
-    private static ICommandItem MakeDiagnostic(string name, Exception ex)
+    private static CommandItem MakeDiagnostic(string name, Exception ex)
     {
         var inner = ex is TypeInitializationException { InnerException: not null } tie ? tie.InnerException : ex;
-        var msg = inner.Message;
+        var msg = inner?.Message ?? ex.Message;
         return new CommandItem(new Command())
         {
             Title = $"⚠ {name} 加载失败",

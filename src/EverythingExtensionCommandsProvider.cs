@@ -32,18 +32,12 @@ public sealed partial class EverythingExtensionCommandsProvider : CommandProvide
         Icon = IconHelpers.FromRelativePath("Assets\\Everything.png");
         _page = new EverythingExtensionPage(EverythingSettings.Instance);
         _fallback = new FallbackEverythingItem(_page);
-        var openFolderPicker = new OpenFolderPickerPage(EverythingSettings.Instance);
         _commands = [
-            // 本 fork 的主打功能放在最前，避免它被同名条目淹没。
-            new CommandItem(openFolderPicker) {
-                Title = CommandIds.FolderPickerTitle,
-                Subtitle = "列出当前已打开的资源管理器文件夹窗口，选中后只在该文件夹范围内搜索",
-                Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
-            },
             new CommandItem(_page) {
                 Title = CommandIds.GlobalSearchTitle,
                 Subtitle = Resources.everything_plugin_description,
-                Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
+                // 全局搜索沿用原版图标（search.png），folder-search 只留给主页列出的「已打开文件夹」项。
+                Icon = IconHelpers.FromRelativePath("Assets\\Images\\search.png"),
                 MoreCommands = [new CommandContextItem(GetSettingsPage())],
             },
         ];
