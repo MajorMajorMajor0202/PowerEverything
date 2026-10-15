@@ -330,7 +330,7 @@ Use `@` to start with regular search. It should be noted that when regular searc
     <value>Open folder</value>
   </data>
   <data name="everything_open_in_console" xml:space="preserve">
-    <value>Open path in console</value>
+    <value>Open path in terminal</value>
   </data>
   <data name="everything_path" xml:space="preserve">
     <value>Path</value>

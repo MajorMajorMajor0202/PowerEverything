@@ -43,7 +43,7 @@ public sealed partial class EverythingExtensionCommandsProvider : CommandProvide
             new CommandItem(_page) {
                 Title = CommandIds.GlobalSearchTitle,
                 Subtitle = Resources.everything_plugin_description,
-                Icon = IconHelpers.FromRelativePath("Assets\\Images\\search.png"),
+                Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
                 MoreCommands = [new CommandContextItem(GetSettingsPage())],
             },
         ];

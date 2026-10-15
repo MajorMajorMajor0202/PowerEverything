@@ -55,19 +55,35 @@ namespace EverythingExtension.Commands
         {
             await Task.Run(() =>
             {
+                // 优先用 Windows Terminal（wt.exe）：它会按用户「默认终端 / 默认配置文件」
+                // 启动，而不是落后的 cmd.exe。系统没装 WT 时再回退到 cmd。
                 try
                 {
-                    var processStartInfo = new ProcessStartInfo
+                    Process.Start(new ProcessStartInfo
                     {
-                        WorkingDirectory = t,
-                        FileName = "cmd.exe",
-                    };
-
-                    Process.Start(processStartInfo);
+                        FileName = "wt.exe",
+                        Arguments = $"-d \"{t}\"",
+                        UseShellExecute = true,
+                    });
+                    return;
                 }
-                catch (Exception)
+                catch
                 {
-                    // Log.Exception($"Failed to open {Name} in console, {e.Message}", e, GetType());
+                    // WT 不可用，回退到 cmd
+                }
+
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "cmd.exe",
+                        WorkingDirectory = t,
+                        UseShellExecute = true,
+                    });
+                }
+                catch
+                {
+                    // 都打不开就静默失败
                 }
             });
         }

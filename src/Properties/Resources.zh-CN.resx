@@ -330,7 +330,7 @@
     <value>打开文件夹</value>
   </data>
   <data name="everything_open_in_console" xml:space="preserve">
-    <value>在控制台中打开路径</value>
+    <value>在终端中打开路径</value>
   </data>
   <data name="everything_path" xml:space="preserve">
     <value>路径</value>

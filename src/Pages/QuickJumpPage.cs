@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Windows.Storage.Streams;
 using Windows.System;
 
 namespace QuickJumpCmdPal.Pages;
@@ -55,6 +56,9 @@ internal sealed partial class QuickJumpPage : DynamicListPage
 
     /// <summary>「跳转到的文件夹」用的图标。</summary>
     private const string FolderIconPath = "Assets\\Images\\folder-48.png";
+
+    /// <summary>「已固定 / 已打开的文件夹」用的图标（表示「跳过去」的那个特殊图标）。</summary>
+    private const string JumpIconPath = "Assets\\Images\\jump-96.png";
 
     /// <summary>「文件窗口」用的图标。</summary>
     private const string WindowIconPath = "Assets\\Images\\window-48.png";
@@ -601,19 +605,52 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             false,
             _settings.IsPinned(result.FullPath));
 
-        return CreateFolderItem(candidate);
+        // 搜索出来的文件夹走「普通文件夹图标」，再异步补上缩略图（和普通搜索一致的观感）。
+        var item = CreateFolderItem(candidate);
+        AttachThumbnail(item, result.FullPath);
+        return item;
     }
 
     private IListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
     {
         var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
 
-        return new ListItem(new JumpToFileCommand(this, result.FullPath))
+        // 文件项先给一个回退图标，再异步换成真实缩略图（和普通搜索一样的缩略图观感）。
+        var item = new ListItem(new JumpToFileCommand(this, result.FullPath))
         {
             Title = string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
             Subtitle = parent,
             Icon = IconHelpers.FromRelativePath(FileIconPath),
         };
+        AttachThumbnail(item, result.FullPath);
+        return item;
+    }
+
+    /// <summary>
+    /// 异步拿文件 / 文件夹的真实缩略图（与普通搜索 <c>EverythingListItem</c> 同一套
+    /// <see cref="ThumbnailHelper"/>），拿到就覆盖到列表项的图标上；拿不到就保留回退图标。
+    /// 在后台线程跑，不阻塞列表构建。
+    /// </summary>
+    private static void AttachThumbnail(ListItem item, string path)
+    {
+        _ = Task.Run(() =>
+        {
+            try
+            {
+                var stream = ThumbnailHelper.GetThumbnail(path).GetAwaiter().GetResult();
+                if (stream is null)
+                {
+                    return;
+                }
+
+                var data = new IconData(RandomAccessStreamReference.CreateFromStream(stream));
+                item.Icon = new IconInfo(data, data);
+            }
+            catch
+            {
+                // 缩略图取不到就忽略，保留回退图标。
+            }
+        });
     }
 
     #endregion Everything 搜索
@@ -767,7 +804,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             // 固定的文件夹不在副标题上做任何标记：它要和「桌面 / 下载」长得一模一样，
             // 只是排在默认位置之前而已。想取消就去 Ctrl+K 里看「从首页移除」。
             Subtitle = candidate.Path,
-            Icon = IconHelpers.FromRelativePath(FolderIconPath),
+            Icon = IconHelpers.FromRelativePath(candidate.IsOpen || candidate.IsPinned ? JumpIconPath : FolderIconPath),
             MoreCommands = FolderContextCommands(candidate),
         };
     }

@@ -56,7 +56,7 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
         // 否则会与上游包的同名命令撞车，导致命令面板里两个插件无法区分、
         // 快捷键互相抢占，甚至新命令不显示。
         Id = CommandIds.ForScope(_scopePath);
-        Icon = IconHelpers.FromRelativePath("Assets\\Images\\search.png");
+        Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png");
         Title = Resources.everything_subtitle_header;
         Name = CommandIds.DisplayName;
 
@@ -90,7 +90,18 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
     #region Public Methods
 
-    public override IListItem[] GetItems() => [.. _results];
+    public override IListItem[] GetItems()
+    {
+        // 首次打开（空查询且还没填过内容）时，主页直接展示已打开的文件夹。
+        // 因为宿主首次回调 UpdateSearchText("", "") 会因 oldSearch==newSearch 直接返回、不触发 Query，
+        // 所以首屏填充放到这里兜底。
+        if (string.IsNullOrEmpty(SearchText) && _results.Count == 0)
+        {
+            PopulateOpenFolders();
+        }
+
+        return [.. _results];
+    }
 
     public async Task DelayQuery()
     {
@@ -235,7 +246,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
         if (string.IsNullOrEmpty(query))
         {
-            WelcomeEmptyContentInitialize();
+            // 全局搜索空查询时，主页直接列出「当前已打开的资源管理器文件夹」，
+            // 这样全局搜索也兼具快速跳转的入口作用（与快速跳转共用同一份已开文件夹枚举）。
+            PopulateOpenFolders();
             return;
         }
         else
@@ -277,6 +290,35 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             Title = Resources.everything_welcome,
             Subtitle = Resources.everything_welcome_subtitle,
         };
+    }
+
+    /// <summary>
+    /// 全局搜索主页为空查询时，列出「当前已打开的资源管理器文件夹」。
+    /// 把这些文件夹当成快捷入口，点一下用资源管理器聚焦到对应窗口
+    /// （与快速跳转共用 <see cref="OpenFolderEnumerator"/> 的同一份已开文件夹枚举）。
+    /// 没有任何已打开的文件夹时，退回原来的欢迎内容。
+    /// </summary>
+    private void PopulateOpenFolders()
+    {
+        _results.Clear();
+        var openFolders = QuickJumpCmdPal.Internal.OpenFolderEnumerator.GetOpenFolders();
+        if (openFolders.Count == 0)
+        {
+            WelcomeEmptyContentInitialize();
+            return;
+        }
+
+        foreach (var folder in openFolders)
+        {
+            _results.Add(new ListItem(new OpenInShellCommand("explorer.exe", folder.Path))
+            {
+                Title = folder.DisplayName,
+                Subtitle = folder.Path,
+                Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
+            });
+        }
+
+        HasMoreItems = false;
     }
 
     private void NotRunningEmptyContentInitialize()
