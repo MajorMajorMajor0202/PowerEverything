@@ -160,8 +160,8 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         private List<IListItem> _searchCache = [];
         private DateTime _searchCacheStamp = DateTime.MinValue;
 
-        /// <summary>Everything 查询最短长度，避免单字符把整个索引拉出来。</summary>
-        private const int MinSearchLength = 2;
+        /// <summary>Everything 查询最短长度。用户要求输入一个字符就触发搜索。</summary>
+        private const int MinSearchLength = 1;
 
         /// <summary>Everything 搜索每次最多返回的条目数（文件夹 + 文件合计）。</summary>
         private const int MaxSearchResults = 40;
@@ -608,20 +608,30 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         return item;
     }
 
-    private ListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
-    {
-        var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
-
-        // 文件项先给一个回退图标，再异步换成真实缩略图（和普通搜索一样的缩略图观感）。
-        var item = new ListItem(new JumpToFileCommand(this, result.FullPath))
+        private ListItem CreateSearchFileItem(EverythingExtension.Internal.SearchResult result)
         {
-            Title = string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
-            Subtitle = parent,
-            Icon = IconHelpers.FromRelativePath(FileIconPath),
-        };
-        AttachThumbnail(item, result.FullPath);
-        return item;
-    }
+            var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
+
+            // 文件项先给一个回退图标，再异步换成真实缩略图（和普通搜索一样的缩略图观感）。
+            var item = new ListItem(new JumpToFileCommand(this, result.FullPath))
+            {
+                Title = string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
+                Subtitle = parent,
+                Icon = IconHelpers.FromRelativePath(FileIconPath),
+                MoreCommands =
+                [
+                    // 复制路径：绑 Ctrl+Shift+C（和 Windows 资源管理器「复制为路径」默认快捷键一致）。
+                    new CommandContextItem(new EverythingExtension.Commands.CopyPathCommand(result))
+                    {
+                        RequestedShortcut = KeyChordHelpers.FromModifiers(ctrl: true, shift: true, vkey: VirtualKey.C),
+                    },
+                    // QuickLook 预览（装了就生效，没装则静默无操作）。
+                    new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(result.FullPath)),
+                ],
+            };
+            AttachThumbnail(item, result.FullPath);
+            return item;
+        }
 
     /// <summary>
     /// 异步拿文件 / 文件夹的真实缩略图（与普通搜索 <c>EverythingListItem</c> 同一套
