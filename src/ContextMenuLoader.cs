@@ -5,6 +5,7 @@ using EverythingExtension.Commands;
 using EverythingExtension.Internal;
 using EverythingExtension.Pages;
 using EverythingExtension.SDK;
+using EverythingExtension.Settings;
 
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
@@ -35,7 +36,7 @@ namespace EverythingExtension
 
         #region Public Methods
 
-        public static IContextItem[] LoadContextMenus(IEverythingClient client, SearchResult searchResult, bool isFirstLevelFolder = false)
+        public static IContextItem[] LoadContextMenus(IEverythingClient client, SearchResult searchResult, bool isFirstLevelFolder = false, string? searchText = null)
         {
             List<IContextItem> contextMenus = [];
             // Test to check if File can be Run as admin, if yes, we add a 'run as admin' context
@@ -74,13 +75,40 @@ namespace EverythingExtension
                 RequestedShortcut = KeyChordHelpers.FromModifiers(ctrl: true, shift: true, vkey: VirtualKey.C),
             });
             contextMenus.Add(new CommandContextItem(new Commands.OpenInConsoleCommand(searchResult)));
-            contextMenus.Add(new CommandContextItem(new DeleteCommand(searchResult)));
 
-            // QuickLook 预览：只对文件有意义（文件夹预览只是个信息框）。
+            // QuickLook 预览：文件与文件夹都能预览（文件夹显示内容面板）。
+            // 快捷键默认 F1，可在扩展设置里改（PreviewShortcut 为 null 时不绑）。
+            var previewItem = new CommandContextItem(new Commands.PreviewWithQuickLookCommand(searchResult.FullPath));
+            var previewShortcut = EverythingSettings.Instance.PreviewShortcut;
+            if (previewShortcut is not null)
+            {
+                previewItem.RequestedShortcut = previewShortcut.Value;
+            }
+
+            contextMenus.Add(previewItem);
+
+            // 打开方式（Windows「打开方式」对话框）—— 只对文件有意义。
             if (searchResult.Type == ResultType.File)
             {
-                contextMenus.Add(new CommandContextItem(new Commands.PreviewWithQuickLookCommand(searchResult.FullPath)));
+                contextMenus.Add(new CommandContextItem(new Commands.OpenWithCommand(searchResult.FullPath)));
             }
+
+            // 发送到指定程序：设置里配了程序路径才出现。
+            if (!string.IsNullOrEmpty(EverythingSettings.Instance.SendToProgram))
+            {
+                contextMenus.Add(new CommandContextItem(new Commands.SendToProgramCommand(searchResult.FullPath)));
+            }
+
+            // 属性窗口。
+            contextMenus.Add(new CommandContextItem(new Commands.OpenPropertiesCommand(searchResult.FullPath)));
+
+            // 在 Everything 中显示更多结果：把当前查询词原样交给 Everything 主程序。
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                contextMenus.Add(new CommandContextItem(new Commands.ShowInEverythingCommand(searchText)));
+            }
+
+            contextMenus.Add(new CommandContextItem(new DeleteCommand(searchResult)));
 
             return [.. contextMenus];
         }

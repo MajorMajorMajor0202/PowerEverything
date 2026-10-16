@@ -90,8 +90,29 @@ namespace EverythingExtension.Internal
             {
                 string searchKeyword = SearchKeywordFormat(SearchText, out bool isRegex, out int maxCount, _settings.MacroEnabled);
 
+                // 全局正则开关：设置里开了就人人有份（与查询里 @ 前缀等效，两者叠加）。
+                if (_settings.UseRegex)
+                {
+                    EverythingSdk.Everything_SetRegex(true);
+                    isRegex = true;
+                }
+
+                // 搜索前缀：用户配的全局 Everything 语法（如 ext:pdf），加在最前面。
+                if (!string.IsNullOrWhiteSpace(_settings.QueryPrefix))
+                {
+                    searchKeyword = _settings.QueryPrefix + " " + searchKeyword;
+                }
+
                 if (!string.IsNullOrEmpty(Scope))
                     searchKeyword = "path:\"" + Scope + "\\*\" " + searchKeyword;
+
+                // 排序：查询里自己写了 sort: 就以查询为准，否则套用设置里的排序。
+                var sortToken = _settings.SortByToken;
+                if (sortToken is not null &&
+                    !SearchText.Contains("sort:", StringComparison.OrdinalIgnoreCase))
+                {
+                    searchKeyword += " sort:" + sortToken;
+                }
 
                 ApplySearchSettings(isRegex);
 

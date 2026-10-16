@@ -20,7 +20,7 @@ namespace EverythingExtension.Settings
     {
         #region Public Constructors
 
-        public EverythingListItem(SearchResult search, IEverythingClient client, bool isFirstLevelFolder = false) : base(new NoOpCommand())
+        public EverythingListItem(SearchResult search, IEverythingClient client, bool isFirstLevelFolder = false, string? searchText = null) : base(new NoOpCommand())
         {
             //new DirectoryExplorePage(search.FullPath)
             Title = search.FileName;
@@ -45,7 +45,7 @@ namespace EverythingExtension.Settings
                 return t.Result;
             });
 
-            MoreCommands = [.. ContextMenuLoader.LoadContextMenus(client, search, isFirstLevelFolder)];
+            MoreCommands = [.. ContextMenuLoader.LoadContextMenus(client, search, isFirstLevelFolder, searchText)];
         }
 
         #endregion Public Constructors

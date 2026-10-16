@@ -612,22 +612,45 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         {
             var parent = result.ParentPath ?? Path.GetDirectoryName(result.FullPath) ?? result.FullPath;
 
+            var more = new List<CommandContextItem>
+            {
+                // 复制路径：绑 Ctrl+Shift+C（和 Windows 资源管理器「复制为路径」默认快捷键一致）。
+                new CommandContextItem(new EverythingExtension.Commands.CopyPathCommand(result))
+                {
+                    RequestedShortcut = KeyChordHelpers.FromModifiers(true, false, true, false, VirtualKey.C, 0),
+                },
+            };
+
+            // QuickLook 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
+            var previewItem = new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(result.FullPath));
+            var previewShortcut = EverythingSettings.Instance.PreviewShortcut;
+            if (previewShortcut is not null)
+            {
+                previewItem.RequestedShortcut = previewShortcut.Value;
+            }
+
+            more.Add(previewItem);
+
+            // 在终端中打开文件所在目录（优先 Windows Terminal）。
+            more.Add(new CommandContextItem(new EverythingExtension.Commands.OpenInConsoleForPathCommand(parent)));
+
+            // 打开方式 / 属性。
+            more.Add(new CommandContextItem(new EverythingExtension.Commands.OpenWithCommand(result.FullPath)));
+            more.Add(new CommandContextItem(new EverythingExtension.Commands.OpenPropertiesCommand(result.FullPath)));
+
+            // 发送到指定程序：设置里配了程序路径才出现。
+            if (!string.IsNullOrEmpty(EverythingSettings.Instance.SendToProgram))
+            {
+                more.Add(new CommandContextItem(new EverythingExtension.Commands.SendToProgramCommand(result.FullPath)));
+            }
+
             // 文件项先给一个回退图标，再异步换成真实缩略图（和普通搜索一样的缩略图观感）。
             var item = new ListItem(new JumpToFileCommand(this, result.FullPath))
             {
                 Title = string.IsNullOrEmpty(result.FileName) ? result.FullPath : result.FileName,
                 Subtitle = parent,
                 Icon = IconHelpers.FromRelativePath(FileIconPath),
-                MoreCommands =
-                [
-                    // 复制路径：绑 Ctrl+Shift+C（和 Windows 资源管理器「复制为路径」默认快捷键一致）。
-                    new CommandContextItem(new EverythingExtension.Commands.CopyPathCommand(result))
-                    {
-                        RequestedShortcut = KeyChordHelpers.FromModifiers(ctrl: true, shift: true, vkey: VirtualKey.C),
-                    },
-                    // QuickLook 预览（装了就生效，没装则静默无操作）。
-                    new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(result.FullPath)),
-                ],
+                MoreCommands = [.. more],
             };
             AttachThumbnail(item, result.FullPath);
             return item;
@@ -866,6 +889,22 @@ internal sealed partial class QuickJumpPage : DynamicListPage
                 Icon = IconHelpers.FromRelativePath(WindowIconPath),
             });
         }
+
+        // 在终端中打开这个文件夹（优先 Windows Terminal）。
+        commands.Add(new CommandContextItem(new EverythingExtension.Commands.OpenInConsoleForPathCommand(candidate.Path)));
+
+        // QuickLook 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
+        var folderPreviewItem = new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(candidate.Path));
+        var folderPreviewShortcut = EverythingSettings.Instance.PreviewShortcut;
+        if (folderPreviewShortcut is not null)
+        {
+            folderPreviewItem.RequestedShortcut = folderPreviewShortcut.Value;
+        }
+
+        commands.Add(folderPreviewItem);
+
+        // 属性窗口。
+        commands.Add(new CommandContextItem(new EverythingExtension.Commands.OpenPropertiesCommand(candidate.Path)));
 
         return [.. commands];
     }
