@@ -621,7 +621,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
                 },
             };
 
-            // QuickLook 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
+            // 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
             var previewItem = new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(result.FullPath));
             var previewShortcut = EverythingSettings.Instance.PreviewShortcut;
             if (previewShortcut is not null)
@@ -652,6 +652,14 @@ internal sealed partial class QuickJumpPage : DynamicListPage
                 Icon = IconHelpers.FromRelativePath(FileIconPath),
                 MoreCommands = [.. more],
             };
+
+            // 可拖出：拖到别处落下来就是真实文件。
+            var package = EverythingExtension.Helpers.DataPackageHelper.ForPath(result.FullPath);
+            if (package is not null)
+            {
+                item.DataPackage = package;
+            }
+
             AttachThumbnail(item, result.FullPath);
             return item;
         }
@@ -827,7 +835,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
 
     private ListItem CreateFolderItem(FolderCandidate candidate)
     {
-        return new ListItem(new JumpToFolderCommand(this, candidate.Path))
+        var item = new ListItem(new JumpToFolderCommand(this, candidate.Path))
         {
             Title = candidate.DisplayName,
 
@@ -839,6 +847,15 @@ internal sealed partial class QuickJumpPage : DynamicListPage
             Icon = IconHelpers.FromRelativePath(FolderIconPath),
             MoreCommands = FolderContextCommands(candidate),
         };
+
+        // 可拖出：拖到资源管理器 / 桌面落下来就是真实文件夹。
+        var package = EverythingExtension.Helpers.DataPackageHelper.ForPath(candidate.Path);
+        if (package is not null)
+        {
+            item.DataPackage = package;
+        }
+
+        return item;
     }
 
     private ListItem CreateDialogItem(FileDialogWindow dialog, bool isTopMost)
@@ -893,7 +910,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         // 在终端中打开这个文件夹（优先 Windows Terminal）。
         commands.Add(new CommandContextItem(new EverythingExtension.Commands.OpenInConsoleForPathCommand(candidate.Path)));
 
-        // QuickLook 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
+        // 预览：快捷键默认 F1，可在「搜索与预览设置」里改。
         var folderPreviewItem = new CommandContextItem(new EverythingExtension.Commands.PreviewWithQuickLookCommand(candidate.Path));
         var folderPreviewShortcut = EverythingSettings.Instance.PreviewShortcut;
         if (folderPreviewShortcut is not null)

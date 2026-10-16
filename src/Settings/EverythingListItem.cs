@@ -1,4 +1,5 @@
 ﻿using EverythingExtension.Commands;
+using EverythingExtension.Helpers;
 using EverythingExtension.Internal;
 using EverythingExtension.Pages;
 using EverythingExtension.Properties;
@@ -46,6 +47,13 @@ namespace EverythingExtension.Settings
             });
 
             MoreCommands = [.. ContextMenuLoader.LoadContextMenus(client, search, isFirstLevelFolder, searchText)];
+
+            // 可拖出：宿主用 DataPackage 发起拖拽，落下去就是真实文件 / 文件夹。
+            var package = DataPackageHelper.ForPath(search.FullPath);
+            if (package is not null)
+            {
+                DataPackage = package;
+            }
         }
 
         #endregion Public Constructors

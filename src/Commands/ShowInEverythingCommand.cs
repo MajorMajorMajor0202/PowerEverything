@@ -17,7 +17,7 @@ namespace EverythingExtension.Commands
         public ShowInEverythingCommand(string query)
         {
             _query = query;
-            Name = "在 Everything 中显示更多结果";
+            Name = "在 Everything 中查看";
             Icon = _theIcon;
         }
 
