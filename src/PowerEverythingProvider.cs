@@ -1,7 +1,11 @@
 using EverythingExtension;
+using EverythingExtension.Settings;
+
 using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
+
 using QuickJumpCmdPal;
+using QuickJumpCmdPal.Settings;
 
 using Serilog;
 
@@ -17,6 +21,9 @@ namespace PowerEverything;
 ///
 /// 容错与可观测：任一个子 Provider 在构造 / 初始化时抛异常，只丢它自己的入口，并把异常
 /// 暴露为一个可见的「⚠ 加载失败」诊断项（而不是整条扩展静默消失，难以排查）。
+///
+/// 设置合并：宿主的「设置 → 扩展」表单只读【本 Provider】的 Settings 属性，子 Provider
+/// 自己设的宿主看不到。构造函数里把两个子设置管理器合并成一份挂上来（详见注释）。
 /// </summary>
 public sealed partial class PowerEverythingProvider : CommandProvider
 {
@@ -32,6 +39,28 @@ public sealed partial class PowerEverythingProvider : CommandProvider
 
         var qjEx = TryCreate(() => new QuickJumpCommandsProvider(), out _quickJump);
         var evEx = TryCreate(() => new EverythingExtensionCommandsProvider(), out _everything);
+
+        // 宿主（CmdPal 的「设置 → 扩展」）只认识本 Provider：两个子 Provider 自己设的
+        // Settings 宿主根本看不到，那份表单此前是空白的，用户找不到任何选项。
+        // 这里建一个合并容器，把两边的设置项都挂上来；用户改动时两边各自存盘
+        // （两个设置文件互不影响，原容器仍供面板内右键的「设置」使用）。
+        // 合并失败只丢这张表单，不拖垮整个扩展（子 Provider 的容错同上）。
+        try
+        {
+            var combinedSettings = new Settings();
+            EverythingSettings.Instance.AddTo(combinedSettings);
+            QuickJumpSettings.Instance.AddTo(combinedSettings);
+            combinedSettings.SettingsChanged += (_, _) =>
+            {
+                EverythingSettings.Instance.SaveSettings();
+                QuickJumpSettings.Instance.SaveSettings();
+            };
+            Settings = combinedSettings;
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "[PowerEverything] 合并设置表单失败：「设置 → 扩展」里将看不到设置项。");
+        }
 
         var commands = new List<ICommandItem>();
         if (_quickJump is not null) commands.AddRange(_quickJump.TopLevelCommands() ?? []);

@@ -290,5 +290,34 @@ namespace EverythingExtension.Settings
 
         /// <summary>预览的快捷键；设置里的文本解析不了时返回 null（不绑定）。</summary>
         internal KeyChord? PreviewShortcut => HotkeyParser.TryParse(_previewHotkey.Value);
+
+        /// <summary>
+        /// 把全部设置项按原顺序加进目标容器（顺序即设置表单里的显示顺序）。
+        ///
+        /// 用途：宿主（CmdPal「设置 → 扩展」）只认识聚合 Provider
+        /// <see cref="PowerEverythingProvider"/>，两个子 Provider 自己设的 Settings 宿主
+        /// 根本看不到 —— 那份宿主表单此前是空白的。由聚合 Provider 建一个合并容器，
+        /// 再把两边设置项加进去。<see cref="Settings.Add{T}"/> 只是按 Key 存字典，
+        /// 同一个设置项同时留在原容器里没有任何副作用。
+        /// </summary>
+        internal void AddTo(Microsoft.CommandPalette.Extensions.Toolkit.Settings target)
+        {
+            target.Add(_matchCase);
+            target.Add(_matchPath);
+            target.Add(_matchWholeWords);
+            target.Add(_matchDiacritics);
+            target.Add(_matchPrefix);
+            target.Add(_matchSuffix);
+            target.Add(_ignorePunctuation);
+            target.Add(_ignoreWhitespace);
+            target.Add(_macroEnabled);
+            target.Add(_maxSearchCount);
+            target.Add(_searchFoldersFirst);
+            target.Add(_queryPrefix);
+            target.Add(_useRegex);
+            target.Add(_sortBy);
+            target.Add(_sendToProgram);
+            target.Add(_previewHotkey);
+        }
     }
 }

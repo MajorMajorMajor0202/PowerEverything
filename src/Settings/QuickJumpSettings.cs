@@ -151,4 +151,14 @@ internal sealed class QuickJumpSettings : JsonSettingsManager
         Directory.CreateDirectory(directory);
         return Path.Combine(directory, "settings.json");
     }
+
+    /// <summary>
+    /// 把本管理器的设置项加进目标容器（供聚合 Provider 合并成宿主设置表单用）。
+    /// 与 <c>EverythingSettings.AddTo</c> 同一目的，见那里的注释。
+    /// </summary>
+    internal void AddTo(Microsoft.CommandPalette.Extensions.Toolkit.Settings target)
+    {
+        target.Add(_autoEnter);
+        target.Add(_pinned);
+    }
 }
