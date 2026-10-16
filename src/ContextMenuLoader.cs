@@ -13,6 +13,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
+using Windows.System;
+
 namespace EverythingExtension
 {
     internal static class ContextMenuLoader
@@ -65,9 +67,20 @@ namespace EverythingExtension
             }
 
             contextMenus.Add(new CommandContextItem(new CopyFileCommand(searchResult)));
-            contextMenus.Add(new CommandContextItem(new Commands.CopyPathCommand(searchResult)));
+
+            // 复制路径：绑 Ctrl+Shift+C（和 Windows 资源管理器「复制为路径」默认快捷键一致）。
+            contextMenus.Add(new CommandContextItem(new Commands.CopyPathCommand(searchResult))
+            {
+                RequestedShortcut = KeyChordHelpers.FromModifiers(ctrl: true, shift: true, vkey: VirtualKey.C),
+            });
             contextMenus.Add(new CommandContextItem(new Commands.OpenInConsoleCommand(searchResult)));
             contextMenus.Add(new CommandContextItem(new DeleteCommand(searchResult)));
+
+            // QuickLook 预览：只对文件有意义（文件夹预览只是个信息框）。
+            if (searchResult.Type == ResultType.File)
+            {
+                contextMenus.Add(new CommandContextItem(new Commands.PreviewWithQuickLookCommand(searchResult.FullPath)));
+            }
 
             return [.. contextMenus];
         }

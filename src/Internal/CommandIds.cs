@@ -18,11 +18,11 @@ internal static class CommandIds
     /// <summary>命令面板里显示的扩展名。纯英文，不掺「中文 (English)」式注释。</summary>
     internal const string DisplayName = "QuickJump";
 
-    /// <summary>顶层命令标题（功能入口）。</summary>
-    internal const string JumpTitle = "QuickJump";
+    /// <summary>顶层命令标题（功能入口）。与全局搜索入口的「Everything 全局搜索」保持同一命名风格。</summary>
+    internal const string JumpTitle = "Everything 快速跳转";
 
     /// <summary>功能入口下面那行说明。</summary>
-    internal const string JumpSubtitle = "将「打开 / 另存为」窗口快速跳转到已打开路径";
+    internal const string JumpSubtitle = "搜索任意文件夹 / 文件，回车送进「打开 / 另存为」窗口";
 
     /// <summary>设置页标题。</summary>
     internal const string SettingsTitle = "QuickJump Settings";
