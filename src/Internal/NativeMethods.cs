@@ -108,6 +108,27 @@ internal static class NativeMethods
 
     #endregion Foreground / input
 
+    #region Z-order
+
+    internal static readonly IntPtr HWND_TOPMOST = new(-1);
+
+    internal const uint SWP_NOSIZE = 0x0001;
+    internal const uint SWP_NOMOVE = 0x0002;
+    internal const uint SWP_NOACTIVATE = 0x0010;
+    internal const uint SWP_SHOWWINDOW = 0x0040;
+
+    /// <summary>GWL_EXSTYLE 固定是 -20。</summary>
+    internal const int GWL_EXSTYLE = -20;
+
+    /// <summary>WS_EX_TOOLWINDOW：工具窗口（托盘、隐藏辅助窗口），枚举顶层窗口时要跳过。</summary>
+    internal const int WS_EX_TOOLWINDOW = 0x00000080;
+
+    [DllImport("user32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    internal static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
+
+    #endregion Z-order
+
     #region Messages
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

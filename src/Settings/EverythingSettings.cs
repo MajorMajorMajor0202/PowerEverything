@@ -146,7 +146,7 @@ namespace EverythingExtension.Settings
         private readonly TextSetting _previewHotkey = new(
             Namespaced("PreviewHotkey"),
             "预览快捷键",
-            "QuickLook 预览的快捷键：选中文件后直接按该组合键即可预览。写法如 F1、Ctrl+Shift+P、Alt+D。",
+            "预览的快捷键（通过 QuickLook 显示）：选中文件后直接按该组合键即可预览。写法如 F1、Ctrl+Shift+P、Alt+D。",
             "F1");
 
         //private readonly  _macroDisabled = new(
@@ -288,7 +288,7 @@ namespace EverythingExtension.Settings
         /// <summary>「发送到指定程序」的程序完整路径；空 = 不显示该菜单项。</summary>
         internal string SendToProgram => _sendToProgram.Value?.Trim() ?? string.Empty;
 
-        /// <summary>QuickLook 预览的快捷键；设置里的文本解析不了时返回 null（不绑定）。</summary>
+        /// <summary>预览的快捷键；设置里的文本解析不了时返回 null（不绑定）。</summary>
         internal KeyChord? PreviewShortcut => HotkeyParser.TryParse(_previewHotkey.Value);
     }
 }

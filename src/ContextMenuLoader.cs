@@ -76,7 +76,7 @@ namespace EverythingExtension
             });
             contextMenus.Add(new CommandContextItem(new Commands.OpenInConsoleCommand(searchResult)));
 
-            // QuickLook 预览：文件与文件夹都能预览（文件夹显示内容面板）。
+            // 预览：文件与文件夹都能预览（文件夹显示内容面板）。
             // 快捷键默认 F1，可在扩展设置里改（PreviewShortcut 为 null 时不绑）。
             var previewItem = new CommandContextItem(new Commands.PreviewWithQuickLookCommand(searchResult.FullPath));
             var previewShortcut = EverythingSettings.Instance.PreviewShortcut;
