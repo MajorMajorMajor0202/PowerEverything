@@ -44,6 +44,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
     private IEverythingClient? _everythingClient;
     private long _everythingSearchCookie;
 
+    /// <summary>最近一次实际执行的查询词，供「在 Everything 中显示更多结果」使用。</summary>
+    private string? _lastQuery;
+
     #endregion Fields
 
     #region Public Constructors
@@ -242,6 +245,10 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
         _everythingClient?.SearchResults.Clear();
         _everythingClient?.Cancel();
 
+        // 记住查询词：「在 Everything 中显示更多结果」要原样再用它搜一次。
+        // 范围页（_scopePath 非空）不给看更多——它的结果本就限定在该文件夹里。
+        _lastQuery = string.IsNullOrEmpty(query) || !string.IsNullOrEmpty(_scopePath) ? null : query;
+
         //WelcomeEmptyContentInitialize();
 
         if (string.IsNullOrEmpty(query))
@@ -359,7 +366,7 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             //    Debug.Write(ex);
             //    //Logger.LogError("Failed to get the icon.", ex);
             //}
-            var item = new EverythingListItem(result, _everythingClient);
+            var item = new EverythingListItem(result, _everythingClient, searchText: _lastQuery);
 
             //_item.Icon = icon;
 

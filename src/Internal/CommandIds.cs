@@ -22,7 +22,7 @@ internal static class CommandIds
     internal const string JumpTitle = "Everything 快速跳转";
 
     /// <summary>功能入口下面那行说明。</summary>
-    internal const string JumpSubtitle = "搜索任意文件夹 / 文件，回车送进「打开 / 另存为」窗口";
+    internal const string JumpSubtitle = "使用 Everything 将打开/另存为窗口跳转到任意路径";
 
     /// <summary>设置页标题。</summary>
     internal const string SettingsTitle = "QuickJump Settings";

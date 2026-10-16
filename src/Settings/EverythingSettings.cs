@@ -1,11 +1,14 @@
 ﻿// Copyright (c) Microsoft Corporation The Microsoft Corporation licenses this file to you under the
 // MIT license. See the LICENSE file in the project root for more information.
 
+using EverythingExtension.Internal;
 using EverythingExtension.Properties;
 
+using Microsoft.CommandPalette.Extensions;
 using Microsoft.CommandPalette.Extensions.Toolkit;
 using Microsoft.VisualBasic;
 
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -100,6 +103,52 @@ namespace EverythingExtension.Settings
      Resources.everything_searchFoldersFirst_enabled_description,
      _searchFoldersFirstChoices);
 
+        // —— 以下为 fork 新增的设置（功能对标 ECP，均为原生实现）——
+
+        /// <summary>搜索前缀：每次查询自动加到最前面的 Everything 语法。</summary>
+        private readonly TextSetting _queryPrefix = new(
+            Namespaced(nameof(QueryPrefix)),
+            "搜索前缀",
+            "每次搜索自动加到查询最前面的 Everything 语法。例如 ext:pdf 只搜 PDF 文件、folder: 限定目录范围。留空为不加。",
+            string.Empty);
+
+        /// <summary>正则搜索总开关。</summary>
+        private readonly ToggleSetting _useRegex = new(
+            Namespaced(nameof(UseRegex)),
+            "正则搜索",
+            "把所有查询按正则表达式匹配（等效于每次输入都以 @ 开头）。开启后查询里的 ( ) [ ] 等符号按正则解释。",
+            false);
+
+        private static readonly List<ChoiceSetSetting.Choice> _sortByChoices = new List<ChoiceSetSetting.Choice>
+        {
+            new ChoiceSetSetting.Choice("默认（Everything 自身顺序）", "default"),
+            new ChoiceSetSetting.Choice("名称", "name"),
+            new ChoiceSetSetting.Choice("修改日期", "date-modified"),
+            new ChoiceSetSetting.Choice("大小", "size"),
+            new ChoiceSetSetting.Choice("运行次数", "run-count"),
+        };
+
+        /// <summary>结果排序。</summary>
+        private readonly ChoiceSetSetting _sortBy = new(
+            Namespaced("SortBy"),
+            "结果排序",
+            "搜索结果的排序方式（Everything 的 sort: 语法）。查询里自己写了 sort: 时，以查询里的为准。",
+            _sortByChoices);
+
+        /// <summary>「发送到指定程序」的程序路径。</summary>
+        private readonly TextSetting _sendToProgram = new(
+            Namespaced(nameof(SendToProgram)),
+            "发送到指定程序",
+            "文件右键菜单「发送到指定程序」使用的程序完整路径（.exe）。留空则不显示该菜单项。",
+            string.Empty);
+
+        /// <summary>QuickLook 预览的快捷键。</summary>
+        private readonly TextSetting _previewHotkey = new(
+            Namespaced("PreviewHotkey"),
+            "预览快捷键",
+            "QuickLook 预览的快捷键：选中文件后直接按该组合键即可预览。写法如 F1、Ctrl+Shift+P、Alt+D。",
+            "F1");
+
         //private readonly  _macroDisabled = new(
 
         #endregion Fields
@@ -124,7 +173,6 @@ namespace EverythingExtension.Settings
         public EverythingSettings() : base()
         {
             FilePath = SettingsJsonPath();
-            LoadSettings();
             Settings.Add(_matchCase);
             Settings.Add(_matchPath);
             Settings.Add(_matchWholeWords);
@@ -136,6 +184,16 @@ namespace EverythingExtension.Settings
             Settings.Add(_macroEnabled);
             Settings.Add(_maxSearchCount);
             Settings.Add(_searchFoldersFirst);
+            Settings.Add(_queryPrefix);
+            Settings.Add(_useRegex);
+            Settings.Add(_sortBy);
+            Settings.Add(_sendToProgram);
+            Settings.Add(_previewHotkey);
+
+            // 必须先 Add 再 Load：JsonSettingsManager.LoadSettings() 内部走 Settings.Update()，
+            // 它只对【已经 Add 进去】的设置项生效；顺序反了的话上次保存的值一个都读不回来
+            // （上游原来的写法就是反的，导致匹配选项等设置在重启后恢复默认值）。
+            LoadSettings();
 
             Settings.SettingsChanged += (_, _) => SaveSettings();
         }
@@ -205,5 +263,32 @@ namespace EverythingExtension.Settings
                 return result;
             }
         }
+
+        /// <summary>每次搜索自动加到查询最前面的 Everything 语法（如 ext:pdf）。</summary>
+        internal string QueryPrefix => _queryPrefix.Value?.Trim() ?? string.Empty;
+
+        /// <summary>正则搜索总开关（与查询里的 @ 前缀叠加）。</summary>
+        internal bool UseRegex => _useRegex.Value;
+
+        /// <summary>
+        /// 排序令牌（Everything 查询语法的 sort: 值，如 date-modified）。
+        /// default 或空 = 不干预，用 Everything 自身的顺序。
+        /// </summary>
+        internal string? SortByToken
+        {
+            get
+            {
+                var value = _sortBy.Value;
+                return string.IsNullOrEmpty(value) || string.Equals(value, "default", StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : value;
+            }
+        }
+
+        /// <summary>「发送到指定程序」的程序完整路径；空 = 不显示该菜单项。</summary>
+        internal string SendToProgram => _sendToProgram.Value?.Trim() ?? string.Empty;
+
+        /// <summary>QuickLook 预览的快捷键；设置里的文本解析不了时返回 null（不绑定）。</summary>
+        internal KeyChord? PreviewShortcut => HotkeyParser.TryParse(_previewHotkey.Value);
     }
 }
