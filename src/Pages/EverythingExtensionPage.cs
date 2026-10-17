@@ -26,10 +26,10 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
     #region Constants
 
     /// <summary>
-    /// 范围页（从「文件夹搜索」点进某个已打开的文件夹）的输入框说明文字。
+    /// 范围页（从全局主页点进某个已打开的文件夹）输入框说明文字的后半句。
     /// 全局页用资源文件里的插件说明，不受影响。
     /// </summary>
-    private const string ScopePlaceholder = "在 文件夹路径 中使用 Everything 搜索...";
+    private const string ScopePlaceholderSuffix = " 中使用 Everything 搜索...";
 
     #endregion Constants
 
@@ -63,12 +63,12 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
         Title = Resources.everything_subtitle_header;
         Name = CommandIds.DisplayName;
 
-        // 说明文字分两种：从「文件夹搜索」点进某个文件夹进来的是【范围页】，
+        // 说明文字分两种：从全局主页点进某个已打开文件夹进来的是【范围页】，
         // 这里要告诉用户「你是在这个文件夹路径里搜」；从扩展入口直接进来的是全局搜索，
         // 沿用资源文件里原来的插件说明。
         PlaceholderText = string.IsNullOrEmpty(scopePath)
             ? Resources.everything_plugin_description
-            : ScopePlaceholder;
+            : "在 " + scopePath + ScopePlaceholderSuffix;
 
         _settings = settings;
         ShowDetails = true;
@@ -98,7 +98,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
         // 首次打开（空查询且还没填过内容）时，主页直接展示已打开的文件夹。
         // 因为宿主首次回调 UpdateSearchText("", "") 会因 oldSearch==newSearch 直接返回、不触发 Query，
         // 所以首屏填充放到这里兜底。
-        if (string.IsNullOrEmpty(SearchText) && _results.Count == 0)
+        // 范围页不凑这个热闹：它的空查询状态应该是「欢迎/空」，再列一遍已开文件夹
+        // 只会把用户误导去别的范围页。
+        if (string.IsNullOrEmpty(SearchText) && _results.Count == 0 && string.IsNullOrEmpty(_scopePath))
         {
             PopulateOpenFolders();
         }
@@ -253,9 +255,19 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
         if (string.IsNullOrEmpty(query))
         {
-            // 全局搜索空查询时，主页直接列出「当前已打开的资源管理器文件夹」，
-            // 这样全局搜索也兼具快速跳转的入口作用（与快速跳转共用同一份已开文件夹枚举）。
-            PopulateOpenFolders();
+            if (string.IsNullOrEmpty(_scopePath))
+            {
+                // 全局搜索空查询时，主页直接列出「当前已打开的资源管理器文件夹」，
+                // 这样全局搜索也兼具快速跳转的入口作用（与快速跳转共用同一份已开文件夹枚举）。
+                PopulateOpenFolders();
+            }
+            else
+            {
+                // 范围页的空查询 = 刚点进来 / 刚清空搜索框：显示欢迎内容。
+                // 绝不能去列全局的已开文件夹 —— 那等于把用户扔回全局主页，范围感全丢。
+                WelcomeEmptyContentInitialize();
+            }
+
             return;
         }
         else
@@ -301,8 +313,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
     /// <summary>
     /// 全局搜索主页为空查询时，列出「当前已打开的资源管理器文件夹」。
-    /// 把这些文件夹当成快捷入口，点一下用资源管理器聚焦到对应窗口
-    /// （与快速跳转共用 <see cref="OpenFolderEnumerator"/> 的同一份已开文件夹枚举）。
+    /// 这些文件夹本来就已经开着，点进去<b>不是</b>再打开一次窗口，而是进入该文件夹的
+    /// Everything 范围搜索页（复用 <see cref="EverythingExtensionPage"/> 自身，Id 按路径派生，
+    /// 每个范围页带自己的作用域客户端）。「聚焦窗口」「在终端中打开」降到右键菜单。
     /// 没有任何已打开的文件夹时，退回原来的欢迎内容。
     /// </summary>
     private void PopulateOpenFolders()
@@ -317,13 +330,18 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
         foreach (var folder in openFolders)
         {
-            _results.Add(new ListItem(new OpenInShellCommand("explorer.exe", folder.Path))
+            _results.Add(new ListItem(new EverythingExtensionPage(_settings, folder.Path))
             {
                 Title = folder.DisplayName,
                 Subtitle = folder.Path,
-                // 这些「已打开文件夹」项用 folder-search 图标；右键菜单补一个「在终端中打开路径」。
+                // 这些「已打开文件夹」项用 folder-search 图标。
                 Icon = IconHelpers.FromRelativePath("Assets\\Images\\folder-search.png"),
-                MoreCommands = [new CommandContextItem(new OpenInConsoleForPathCommand(folder.Path))],
+                MoreCommands =
+                [
+                    // 窗口本来就开着，「聚焦到该窗口」仍是个合理动作，收到右键菜单里。
+                    new CommandContextItem(new OpenInShellCommand("explorer.exe", folder.Path)),
+                    new CommandContextItem(new OpenInConsoleForPathCommand(folder.Path)),
+                ],
             });
         }
 
