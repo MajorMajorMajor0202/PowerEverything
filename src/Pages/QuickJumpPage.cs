@@ -190,7 +190,7 @@ internal sealed partial class QuickJumpPage : DynamicListPage
         EmptyContent = new CommandItem()
         {
             Title = "没有匹配的文件夹 / 文件",
-            Icon = IconHelpers.FromRelativePath(EntryIconPath),
+            Icon = IconHelpers.FromRelativePath("Assets\\Images\\nothing-found.png"),
         };
     }
 

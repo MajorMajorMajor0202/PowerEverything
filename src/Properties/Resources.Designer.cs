@@ -292,6 +292,15 @@ namespace EverythingExtension.Properties {
         }
         
         /// <summary>
+        ///   查找类似 No results found 的本地化字符串。
+        /// </summary>
+        internal static string everything_no_result {
+            get {
+                return ResourceManager.GetString("everything_no_result", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   查找类似 Tags 的本地化字符串。
         /// </summary>
         internal static string everything_item_tags_name {

@@ -252,19 +252,22 @@ Use `@` to start with regular search. It should be noted that when regular searc
     <value>Help document</value>
   </data>
   <data name="everything_ignorePunctuation_enabled" xml:space="preserve">
-    <value>[V3]Ignore Punctuation Marks</value>
+    <value>Ignore Punctuation</value>
   </data>
   <data name="everything_ignorePunctuation_enabled_description" xml:space="preserve">
-    <value>Automatically skip all punctuation symbols during keyword parsing and matching.</value>
+    <value></value>
   </data>
   <data name="everything_ignoreWhitespace_enabled" xml:space="preserve">
-    <value>[V3]Ignore Whitespace Characters</value>
+    <value>Ignore Whitespace</value>
   </data>
   <data name="everything_ignoreWhitespace_enabled_description" xml:space="preserve">
-    <value>Ignore spaces, tabs and all other whitespace characters in search terms.</value>
+    <value></value>
   </data>
   <data name="everything_is_not_running" xml:space="preserve">
     <value>Everything is not running</value>
+  </data>
+  <data name="everything_no_result" xml:space="preserve">
+    <value>No results found</value>
   </data>
   <data name="everything_item_tags_name" xml:space="preserve">
     <value>Tags</value>
@@ -273,49 +276,49 @@ Use `@` to start with regular search. It should be noted that when regular searc
     <value>Enable macro query</value>
   </data>
   <data name="everything_macro_enabled_description" xml:space="preserve">
-    <value>Available doc:,audio:,zip:,pic:,video:,web: and exe: and so filters macro search files</value>
+    <value>Category macros like doc:, pic:, video:</value>
   </data>
   <data name="everything_matchCase_enabled" xml:space="preserve">
-    <value>Case Sensitive Matching</value>
+    <value>Case Sensitive</value>
   </data>
   <data name="everything_matchCase_enabled_description" xml:space="preserve">
-    <value>Enable case-sensitive search; uppercase and lowercase letters are treated as distinct characters.</value>
+    <value></value>
   </data>
   <data name="everything_matchDiacritics_enabled" xml:space="preserve">
-    <value>[V3]Match Diacritics</value>
+    <value>Match Diacritics</value>
   </data>
   <data name="everything_matchDiacritics_enabled_description" xml:space="preserve">
-    <value>Distinguish diacritical characters; accented letters won't match non-accented counterparts.</value>
+    <value></value>
   </data>
   <data name="everything_matchPath_enabled" xml:space="preserve">
-    <value>Include Path In Search</value>
+    <value>Match Path</value>
   </data>
   <data name="everything_matchPath_enabled_description" xml:space="preserve">
-    <value>Search covers full directory paths; keywords match content within folder locations besides filenames.</value>
+    <value></value>
   </data>
   <data name="everything_matchPrefix_enabled" xml:space="preserve">
-    <value>[V3]Prefix Only Match</value>
+    <value>Prefix Only</value>
   </data>
   <data name="everything_matchPrefix_enabled_description" xml:space="preserve">
-    <value>Match search term only as the starting prefix of file names or paths.</value>
+    <value></value>
   </data>
   <data name="everything_matchSuffix_enabled" xml:space="preserve">
-    <value>[V3]Suffix Only Match</value>
+    <value>Suffix Only</value>
   </data>
   <data name="everything_matchSuffix_enabled_description" xml:space="preserve">
-    <value>Match search term only as the trailing suffix of file names or paths.</value>
+    <value></value>
   </data>
   <data name="everything_matchWholeWords_enabled" xml:space="preserve">
-    <value>Whole Word Matching</value>
+    <value>Whole Words Only</value>
   </data>
   <data name="everything_matchWholeWords_enabled_description" xml:space="preserve">
-    <value>Match whole words only, partial substrings inside words will not be matched.</value>
+    <value></value>
   </data>
   <data name="everything_max_search_result_limit" xml:space="preserve">
     <value>Search result limit</value>
   </data>
   <data name="everything_max_search_result_limit_description" xml:space="preserve">
-    <value>The maximum number of search results returned (too many can cause CmdPal to crash)</value>
+    <value>Too many results may slow the palette</value>
   </data>
   <data name="everything_name" xml:space="preserve">
     <value>Name</value>
@@ -375,7 +378,7 @@ Use `@` to start with regular search. It should be noted that when regular searc
     <value>Folder Sort Priority Rule</value>
   </data>
   <data name="everything_searchFoldersFirst_enabled_description" xml:space="preserve">
-    <value>[V3]Configure display priority between folders and files: folders first on ascending/descending sort, always first or always last.</value>
+    <value></value>
   </data>
   <data name="everything_searchFoldersFirst_never" xml:space="preserve">
     <value>Never Show Folders First</value>
