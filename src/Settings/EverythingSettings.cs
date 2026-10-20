@@ -109,14 +109,14 @@ namespace EverythingExtension.Settings
         private readonly TextSetting _queryPrefix = new(
             Namespaced(nameof(QueryPrefix)),
             "搜索前缀",
-            "每次搜索自动加到查询最前面的 Everything 语法。例如 ext:pdf 只搜 PDF 文件、folder: 限定目录范围。留空为不加。",
+            "每次搜索自动附加的 Everything 语法，如 ext:pdf",
             string.Empty);
 
         /// <summary>正则搜索总开关。</summary>
         private readonly ToggleSetting _useRegex = new(
             Namespaced(nameof(UseRegex)),
             "正则搜索",
-            "把所有查询按正则表达式匹配（等效于每次输入都以 @ 开头）。开启后查询里的 ( ) [ ] 等符号按正则解释。",
+            "把查询按正则表达式匹配",
             false);
 
         private static readonly List<ChoiceSetSetting.Choice> _sortByChoices = new List<ChoiceSetSetting.Choice>
@@ -132,21 +132,21 @@ namespace EverythingExtension.Settings
         private readonly ChoiceSetSetting _sortBy = new(
             Namespaced("SortBy"),
             "结果排序",
-            "搜索结果的排序方式（Everything 的 sort: 语法）。查询里自己写了 sort: 时，以查询里的为准。",
+            "查询里写 sort: 时以查询为准",
             _sortByChoices);
 
         /// <summary>「发送到指定程序」的程序路径。</summary>
         private readonly TextSetting _sendToProgram = new(
             Namespaced(nameof(SendToProgram)),
             "发送到指定程序",
-            "文件右键菜单「发送到指定程序」使用的程序完整路径（.exe）。留空则不显示该菜单项。",
+            "右键「发送到指定程序」使用的程序路径，留空不显示",
             string.Empty);
 
         /// <summary>QuickLook 预览的快捷键。</summary>
         private readonly TextSetting _previewHotkey = new(
             Namespaced("PreviewHotkey"),
             "预览快捷键",
-            "预览的快捷键（通过 QuickLook 显示）：选中文件后直接按该组合键即可预览。写法如 F1、Ctrl+Shift+P、Alt+D。",
+            "选中文件后按该组合键预览，如 F1、Ctrl+Shift+P",
             "F1");
 
         //private readonly  _macroDisabled = new(
@@ -173,22 +173,24 @@ namespace EverythingExtension.Settings
         public EverythingSettings() : base()
         {
             FilePath = SettingsJsonPath();
-            Settings.Add(_matchCase);
-            Settings.Add(_matchPath);
-            Settings.Add(_matchWholeWords);
-            Settings.Add(_matchDiacritics);
-            Settings.Add(_matchPrefix);
-            Settings.Add(_matchSuffix);
-            Settings.Add(_ignorePunctuation);
-            Settings.Add(_ignoreWhitespace);
-            Settings.Add(_macroEnabled);
+
+            // 排列顺序 = 设置表单里的显示顺序：先搜索行为，再右键菜单相关，最后匹配选项。
             Settings.Add(_maxSearchCount);
+            Settings.Add(_sortBy);
             Settings.Add(_searchFoldersFirst);
             Settings.Add(_queryPrefix);
             Settings.Add(_useRegex);
-            Settings.Add(_sortBy);
-            Settings.Add(_sendToProgram);
+            Settings.Add(_macroEnabled);
             Settings.Add(_previewHotkey);
+            Settings.Add(_sendToProgram);
+            Settings.Add(_matchCase);
+            Settings.Add(_matchWholeWords);
+            Settings.Add(_matchPath);
+            Settings.Add(_matchPrefix);
+            Settings.Add(_matchSuffix);
+            Settings.Add(_matchDiacritics);
+            Settings.Add(_ignorePunctuation);
+            Settings.Add(_ignoreWhitespace);
 
             // 必须先 Add 再 Load：JsonSettingsManager.LoadSettings() 内部走 Settings.Update()，
             // 它只对【已经 Add 进去】的设置项生效；顺序反了的话上次保存的值一个都读不回来
@@ -302,22 +304,23 @@ namespace EverythingExtension.Settings
         /// </summary>
         internal void AddTo(Microsoft.CommandPalette.Extensions.Toolkit.Settings target)
         {
-            target.Add(_matchCase);
-            target.Add(_matchPath);
-            target.Add(_matchWholeWords);
-            target.Add(_matchDiacritics);
-            target.Add(_matchPrefix);
-            target.Add(_matchSuffix);
-            target.Add(_ignorePunctuation);
-            target.Add(_ignoreWhitespace);
-            target.Add(_macroEnabled);
+            // 与构造函数里的添加顺序保持一致（顺序即表单显示顺序）。
             target.Add(_maxSearchCount);
+            target.Add(_sortBy);
             target.Add(_searchFoldersFirst);
             target.Add(_queryPrefix);
             target.Add(_useRegex);
-            target.Add(_sortBy);
-            target.Add(_sendToProgram);
+            target.Add(_macroEnabled);
             target.Add(_previewHotkey);
+            target.Add(_sendToProgram);
+            target.Add(_matchCase);
+            target.Add(_matchWholeWords);
+            target.Add(_matchPath);
+            target.Add(_matchPrefix);
+            target.Add(_matchSuffix);
+            target.Add(_matchDiacritics);
+            target.Add(_ignorePunctuation);
+            target.Add(_ignoreWhitespace);
         }
     }
 }

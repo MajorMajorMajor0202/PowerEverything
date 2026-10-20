@@ -129,6 +129,17 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
                     //await DelayQuery();
                     Query(newSearch);
                     FetchItems(30);
+
+                    // 非空查询但零结果：显示「没有找到内容」空状态（带 nothing-found 图标）。
+                    // cookie 校验与 FetchItems 内部同一判据：被更新的查询抢先时不要误设。
+                    if (!string.IsNullOrEmpty(newSearch) &&
+                        _results.Count == 0 &&
+                        _everythingClient is not null &&
+                        _everythingClient.Cookie == _everythingSearchCookie)
+                    {
+                        NoResultsEmptyContentInitialize();
+                    }
+
                     RaiseItemsChanged(_results.Count);
                 }
                 catch (Exception ex)
@@ -312,6 +323,18 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
     }
 
     /// <summary>
+    /// 搜索正常执行、但没有任何结果时的空状态（与「Everything 未运行」的警告态区分）。
+    /// </summary>
+    private void NoResultsEmptyContentInitialize()
+    {
+        EmptyContent = new CommandItem
+        {
+            Title = Resources.everything_no_result,
+            Icon = IconHelpers.FromRelativePath("Assets\\Images\\nothing-found.png"),
+        };
+    }
+
+    /// <summary>
     /// 全局搜索主页为空查询时，列出「当前已打开的资源管理器文件夹」。
     /// 这些文件夹本来就已经开着，点进去<b>不是</b>再打开一次窗口，而是进入该文件夹的
     /// Everything 范围搜索页（复用 <see cref="EverythingExtensionPage"/> 自身，Id 按路径派生，
@@ -327,6 +350,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             WelcomeEmptyContentInitialize();
             return;
         }
+
+        // 列表有内容了，清掉可能残留的空状态（例如上一次搜索的「没有找到内容」）。
+        EmptyContent = null;
 
         foreach (var folder in openFolders)
         {

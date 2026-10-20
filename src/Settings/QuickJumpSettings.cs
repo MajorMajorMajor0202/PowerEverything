@@ -24,7 +24,7 @@ internal sealed class QuickJumpSettings : JsonSettingsManager
     private readonly ToggleSetting _autoEnter = new(
         "quickJump.AutoEnter",
         "填入路径后自动回车",
-        "打开：填进路径后立刻回车跳过去。关闭：只填路径，自己按回车确认。",
+        string.Empty,
         true);
 
     /// <summary>
@@ -41,7 +41,7 @@ internal sealed class QuickJumpSettings : JsonSettingsManager
     private readonly TextSetting _pinned = new(
         "quickJump.PinnedFolders",
         "固定文件夹",
-        "固定在首页的文件夹，一行一个路径。在列表里对某个文件夹按 Ctrl+K →「固定到首页」也能添加。",
+        "一行一个路径；列表里按 Ctrl+K 也可固定",
         string.Empty)
     {
         Multiline = true,
