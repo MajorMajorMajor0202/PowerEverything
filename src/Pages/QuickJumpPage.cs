@@ -886,11 +886,17 @@ internal sealed partial class QuickJumpPage : DynamicListPage
     /// 如果已经定过目标窗口，再加一条「重新选择目标窗口」。
     ///
     /// 顺序有意义：宿主把选中项的<b>第一条</b>上下文命令画在面板底部（就是那个带 Ctrl+Enter 的按钮），
-    /// 所以刷新留在第一条，固定放它后面。
+    /// 所以文件夹浏览放在第一条，刷新和固定放它后面。
     /// </summary>
     private CommandContextItem[] FolderContextCommands(FolderCandidate candidate)
     {
-        var commands = new List<CommandContextItem> { CreateRefreshContextCommand() };
+        var commands = new List<CommandContextItem>();
+        if (EnsureEverythingClient() && _everythingClient is not null)
+        {
+            commands.Add(new CommandContextItem(new EverythingExtension.Pages.DirectoryExplorePage(candidate.Path, _everythingClient)));
+        }
+
+        commands.Add(CreateRefreshContextCommand());
 
         // 内置的默认位置（桌面 / 下载 / 文档 / …）本来就一直在列表里，
         // 没有「取消固定」这回事，所以不给它们挂固定 / 取消固定。

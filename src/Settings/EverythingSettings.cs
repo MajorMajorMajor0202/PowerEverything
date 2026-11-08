@@ -216,6 +216,7 @@ namespace EverythingExtension.Settings
             new("pic", "ani,apng,avif,avifs,bmp,bpg,cur,dds,gif,heic,heics,heif,heifs,hif,ico,jfi,jfif,jif,jpe,jpeg,jpg,jxl,jxr,pcx,png,psb,psd,svg,tga,tif,tiff,wdp,webp,wmf,wbmp,icl,jp2,mpng,raw,nef,hdp") ,
             new("video", "3g2,3gp,3gp2,3gpp,amr,amv,asf,asx,avi,bdmv,bik,d2v,divx,drc,dsa,dsm,dss,dsv,evo,f4v,flc,fli,flic,flv,hdmov,ifo,ivf,m1v,m2p,m2t,m2ts,m2v,m4v,mkv,mod,mov,mp2v,mp4,mp4v,mpe,mpeg,mpg,mpls,mpv2,mpv4,mts,ogm,ogv,ogx,pss,pva,qt,ram,ratdvd,rm,rmm,rmvb,roq,rpm,smil,smk,swf,tod,tp,tpr,ts,tts,uvu,vob,vp6,webm,wm,wmp,wmv,wmx,wvx"),
             new("web", "html,htm,css,js,svg,json,xml,scss,sass,less,styl,ts,mjs,vue,tsx,jsx"),
+            new("code", "c,cc,cpp,cxx,h,hpp,hxx,cs,csx,fs,fsx,vb,java,kt,kts,py,pyw,go,rs,rb,php,lua,js,mjs,cjs,ts,tsx,jsx,vue,svelte,html,css,scss,sass,less,sql,sh,bash,zsh,ps1,bat,cmd,json,xml,yaml,yml,toml"),
             new("font", "ttf,otf,woff,woff2,ttc,ttf"),
         ];
 

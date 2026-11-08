@@ -202,6 +202,11 @@ namespace EverythingExtension.SDK
         internal static extern bool Everything_GetResultSize(int nIndex, ref LargeInteger lpSize);
 
         [MinVersion("1.4.1")]
+        [DllImport(DllPath)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static extern bool Everything_GetResultDateModified(int nIndex, out long fileTime);
+
+        [MinVersion("1.4.1")]
         [DllImport(DllPath, CharSet = CharSet.Unicode)]
         internal static extern uint Everything_GetResultFullPathNameW(int nIndex, char[] lpString, int nMaxCount);
 
@@ -818,6 +823,9 @@ namespace EverythingExtension.SDK
         [DllImport(DllPath3, EntryPoint = "Everything3_GetResultSize", CallingConvention = CallConv)]
         internal static extern ulong Everything3_GetResultSize(IntPtr resultList, IntPtr resultIndex);
 
+        [DllImport(DllPath3, EntryPoint = "Everything3_GetResultDateModified", CallingConvention = CallConv)]
+        internal static extern ulong Everything3_GetResultDateModified(IntPtr resultList, IntPtr resultIndex);
+
         [MinVersion("1.5.0")]
         [DllImport(DllPath3, EntryPoint = "Everything3_GetResultExtensionW", CallingConvention = CallConv, CharSet = CharSet.Unicode)]
         internal static extern int Everything3_GetResultExtensionW(IntPtr resultList, IntPtr resultIndex, [Out] char[] outBuf, IntPtr bufSize);
@@ -888,11 +896,14 @@ namespace EverythingExtension.SDK
 
         #region Structs
 
-        [StructLayout(LayoutKind.Sequential)]
+        [StructLayout(LayoutKind.Explicit, Size = 8)]
         public struct LargeInteger
         {
+            [FieldOffset(0)]
             public int LowPart;
+            [FieldOffset(4)]
             public int HighPart;
+            [FieldOffset(0)]
             public long QuadPart;
         }
 

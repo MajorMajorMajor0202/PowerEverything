@@ -84,6 +84,15 @@ namespace EverythingExtension.Internal
         /// </summary>
         public long? Size { get; init; }
 
+        public DateTime? DateModified { get; init; }
+
+        internal static DateTime? FromFileTime(long value)
+        {
+            if (value <= 0) return null;
+            try { return DateTime.FromFileTimeUtc(value).ToLocalTime(); }
+            catch (ArgumentOutOfRangeException) { return null; }
+        }
+
         /// <summary>
         /// 文件或文件夹父级目录
         /// </summary>

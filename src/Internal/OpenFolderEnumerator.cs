@@ -99,16 +99,20 @@ internal static class OpenFolderEnumerator
             {
                 try
                 {
-                    string? url = window.LocationURL;
-                    if (string.IsNullOrWhiteSpace(url) ||
-                        !url.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
+                    // 已知文件夹可能没有 file:// URL，优先读取 Shell 的实际文件系统路径。
+                    string? path = null;
+                    try { path = window.Document.Folder.Self.Path; } catch { }
+                    if (string.IsNullOrWhiteSpace(path) || !System.IO.Path.IsPathFullyQualified(path))
                     {
-                        // 「此电脑」「库」「控制面板」等虚拟位置会走到这里，直接忽略。
-                        continue;
+                        string? url = window.LocationURL;
+                        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || !uri.IsFile)
+                            continue;
+                        path = uri.LocalPath;
                     }
 
-                    var path = new Uri(url).LocalPath.TrimEnd('\\', '/');
-                    if (string.IsNullOrEmpty(path) || !seen.Add(path))
+                    // 保留盘符根目录的反斜杠：C: 是相对路径，C:\ 才是根目录。
+                    path = QuickLocations.Normalize(path);
+                    if (!System.IO.Path.IsPathFullyQualified(path) || !seen.Add(path))
                     {
                         continue;
                     }

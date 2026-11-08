@@ -290,7 +290,7 @@ namespace EverythingExtension.Internal
             if (methodInfo == null)
                 return;
 
-            methodInfo.Invoke(null, [RequestFlag.FileName | RequestFlag.Path | RequestFlag.FullPathAndFileName | RequestFlag.HighlightedFileName | RequestFlag.HighlightedFullPathAndFileName | RequestFlag.Size | RequestFlag.Extension]);
+            methodInfo.Invoke(null, [RequestFlag.FileName | RequestFlag.Path | RequestFlag.FullPathAndFileName | RequestFlag.HighlightedFileName | RequestFlag.HighlightedFullPathAndFileName | RequestFlag.Size | RequestFlag.DateModified | RequestFlag.Extension]);
         }
 
         [GeneratedRegex(@"(count:(?<count>\d+))", RegexOptions.IgnoreCase | RegexOptions.Compiled, "zh-CN")]

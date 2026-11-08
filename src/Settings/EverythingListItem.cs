@@ -11,6 +11,7 @@ using Microsoft.CommandPalette.Extensions.Toolkit;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Globalization;
 using System.Threading.Tasks;
 
 using Windows.Storage.Streams;
@@ -27,8 +28,12 @@ namespace EverythingExtension.Settings
             Title = search.FileName;
             Subtitle = $"{search.FullPath}";
 
-            if (search.Size.HasValue)
-                Tags = [new Tag(search.GetFileSizeDisplay() ?? string.Empty)];
+            var tags = new List<ITag>();
+            if (search.GetFileSizeDisplay() is { } size)
+                tags.Add(new Tag(size));
+            if (search.DateModified is { } modified)
+                tags.Add(new Tag(modified.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)));
+            Tags = [.. tags];
 
             if (search.Type == ResultType.Folder)
                 Command = isFirstLevelFolder ? new DirectoryExplorePage(search.FullPath, client) : new OpenCommand(search, client);

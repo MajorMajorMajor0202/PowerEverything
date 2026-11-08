@@ -95,12 +95,11 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
     public override IListItem[] GetItems()
     {
-        // 首次打开（空查询且还没填过内容）时，主页直接展示已打开的文件夹。
-        // 因为宿主首次回调 UpdateSearchText("", "") 会因 oldSearch==newSearch 直接返回、不触发 Query，
-        // 所以首屏填充放到这里兜底。
+        // 页面实例会被宿主复用，每次获取空查询主页都重新读取已打开的目录。
+        // 不能以 _results.Count == 0 为条件，否则首次出现的目录会一直留在列表中。
         // 范围页不凑这个热闹：它的空查询状态应该是「欢迎/空」，再列一遍已开文件夹
         // 只会把用户误导去别的范围页。
-        if (string.IsNullOrEmpty(SearchText) && _results.Count == 0 && string.IsNullOrEmpty(_scopePath))
+        if (string.IsNullOrEmpty(SearchText) && string.IsNullOrEmpty(_scopePath))
         {
             PopulateOpenFolders();
         }
@@ -119,7 +118,8 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
 
     public override void UpdateSearchText(string oldSearch, string newSearch)
     {
-        if (oldSearch != newSearch)
+        if (oldSearch != newSearch ||
+            (string.IsNullOrEmpty(newSearch) && string.IsNullOrEmpty(_scopePath)))
         {
             _ = Task.Run(() =>
             {
@@ -343,8 +343,18 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
     /// </summary>
     private void PopulateOpenFolders()
     {
-        _results.Clear();
         var openFolders = QuickJumpCmdPal.Internal.OpenFolderEnumerator.GetOpenFolders();
+        // 目录没有变化时复用范围页，避免每次 GetItems 都创建新的 Everything 客户端。
+        var unchanged = openFolders.Count > 0 && _results.Count == openFolders.Count;
+        for (var i = 0; unchanged && i < openFolders.Count; i++)
+        {
+            unchanged = string.Equals(_results[i].Subtitle, openFolders[i].Path, StringComparison.OrdinalIgnoreCase)
+                && _results[i].Title == openFolders[i].DisplayName;
+        }
+        if (unchanged)
+            return;
+
+        _results.Clear();
         if (openFolders.Count == 0)
         {
             WelcomeEmptyContentInitialize();
@@ -393,8 +403,9 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             return;
 
         var index = 0;
-        while (!_everythingClient.SearchResults.IsEmpty && _everythingClient.SearchResults.TryDequeue(out var result) && ++index <= limit)
+        while (index < limit && _everythingClient.SearchResults.TryDequeue(out var result))
         {
+            index++;
             //IconInfo icon = null;
             //try
             //{
@@ -411,6 +422,11 @@ internal sealed partial class EverythingExtensionPage : DynamicListPage, IDispos
             //    //Logger.LogError("Failed to get the icon.", ex);
             //}
             var item = new EverythingListItem(result, _everythingClient, searchText: _lastQuery);
+            item.MoreCommands =
+            [
+                .. item.MoreCommands,
+                new CommandContextItem(_helpPage),
+            ];
 
             //_item.Icon = icon;
 

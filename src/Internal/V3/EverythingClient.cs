@@ -98,6 +98,7 @@ namespace EverythingExtension.Internal.V3
                 EveryThing3PropertyId.Name,
                 EveryThing3PropertyId.Extension,
                 EveryThing3PropertyId.Size,
+                EveryThing3PropertyId.DateModified,
                 EveryThing3PropertyId.PathAndName,
                 EveryThing3PropertyId.Type
             };

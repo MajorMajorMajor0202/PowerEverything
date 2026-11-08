@@ -28,7 +28,7 @@ namespace EverythingExtension.Internal
 
         private ResultType Type => GetResultType();
 
-        private int? Size => GetFileSize();
+        private long? Size => GetFileSize();
 
         #endregion Properties
 
@@ -42,6 +42,7 @@ namespace EverythingExtension.Internal
             return new SearchResult(FileName, FullPath, Type, Extension)
             {
                 Size = Size,
+                DateModified = GetDateModified(),
                 ParentPath = Path
             };
         }
@@ -75,17 +76,25 @@ namespace EverythingExtension.Internal
             return string.IsNullOrWhiteSpace(fullPath) ? null : fullPath;
         }
 
-        private int? GetFileSize()
+        private DateTime? GetDateModified()
+        {
+            if (version < new Version(1, 4, 1) || !Everything_GetResultDateModified(index, out var fileTime))
+                return null;
+            return SearchResult.FromFileTime(fileTime);
+        }
+
+        private long? GetFileSize()
         {
             if (Type != ResultType.File)
                 return null;
 
             object[] args = [index, new LargeInteger()];
 
-            _ = Invoke<object>("Everything_GetResultSize", ref args);
+            if (Invoke<bool>("Everything_GetResultSize", ref args) != true)
+                return null;
 
             LargeInteger size = (LargeInteger)args[1];
-            return size.LowPart;
+            return size.QuadPart >= 0 ? size.QuadPart : null;
         }
 
         private T? Invoke<T>(string methodName)

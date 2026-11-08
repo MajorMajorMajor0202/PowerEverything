@@ -13,7 +13,7 @@
   <Identity
     Name="PowerEverything"
     Publisher="CN=PowerEverything.Dev"
-    Version="0.1.0.0" />
+    Version="0.1.0.1" />
 
   <Properties>
     <DisplayName>PowerEverything</DisplayName>

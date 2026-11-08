@@ -31,7 +31,7 @@ namespace EverythingExtension.Internal.V3
 
         private ResultType Type => GetResultType();
 
-        private int? Size => GetFileSize();
+        private long? Size => GetFileSize();
 
         #endregion Properties
 
@@ -45,6 +45,7 @@ namespace EverythingExtension.Internal.V3
             return new SearchResult(FileName, FullPath, Type, Extension)
             {
                 Size = Size,
+                DateModified = SearchResult.FromFileTime(unchecked((long)Everything3_GetResultDateModified(list, index))),
                 ParentPath = Path
             };
         }
@@ -85,12 +86,13 @@ namespace EverythingExtension.Internal.V3
             }
         }
 
-        private int? GetFileSize()
+        private long? GetFileSize()
         {
             if (Type != ResultType.File)
                 return null;
 
-            return (int)Everything3_GetResultSize(list, index);
+            var size = Everything3_GetResultSize(list, index);
+            return size <= long.MaxValue ? (long)size : null;
         }
 
         #endregion Private Methods

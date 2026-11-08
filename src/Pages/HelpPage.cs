@@ -28,7 +28,7 @@ namespace EverythingExtension.Pages
             Icon = IconHelpers.FromRelativePath("Assets\\Everything.png");
             Title = Resources.everything_help_title;
             Name = Resources.everything_text_preview;
-            _mdContent = new MarkdownContent(Resources.everything_help_content);
+            _mdContent = new MarkdownContent(Resources.everything_help_content + SyntaxReference);
             Commands = [
                     new CommandContextItem(Resources.everything_go_back,name:Resources.everything_go_back,action:()=>GoBackHomePage?.Invoke(this,EventArgs.Empty),result:CommandResult.GoBack()){ Icon = new IconInfo("\ue72b") }
                 ];
@@ -39,6 +39,36 @@ namespace EverythingExtension.Pages
         #region Public Methods
 
         public override IContent[] GetContent() => [_mdContent];
+
+        private const string SyntaxReference = """
+
+
+        ## PowerEverything 查询语法速查
+
+        | 用途 | 示例 |
+        | --- | --- |
+        | 同时匹配多个词 | `报告 预算` |
+        | 匹配任意一个词 | `报告 \| 预算` |
+        | 排除词 | `报告 !草稿` |
+        | 完整短语 | `"annual report"` |
+        | 只搜文件 / 文件夹 | `file: 报告` / `folder: 项目` |
+        | 扩展名 | `ext:pdf;docx 报告` |
+        | 限定目录（含子目录） | `"D:\My Projects\" 报告` |
+        | 大小 | `size:>100mb` |
+        | 最近修改 | `dm:last7days` |
+        | 今天修改 | `dm:today` |
+        | 正则（本插件） | `@^report.*\.pdf$` |
+
+        开启「宏搜索」后，可以使用 `doc:`、`pic:`、`audio:`、`video:`、`zip:`、`code:`、`exe:`、`web:`、`font:`。
+        例如 `code: QuickJump`。宏关闭时，请使用原生 `ext:` 语法。
+
+        大小与修改时间显示在结果标签中；索引未提供的字段留空。
+
+        `content:"关键词"` 是 Everything 的内容搜索语法。Everything 1.4 的内容通常未索引，
+        会读取文件，建议同时限定目录及扩展名；Office/PDF 等格式还取决于系统 IFilter。
+
+        [Everything 官方搜索语法](https://www.voidtools.com/support/everything/searching/)
+        """;
 
         /*
         private static string GetMarkdownContent()
